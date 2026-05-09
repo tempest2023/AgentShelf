@@ -5,7 +5,7 @@ import {
   useContext,
   useState,
   useCallback,
-  useEffect,
+  useSyncExternalStore,
   ReactNode,
 } from "react";
 import type { Category } from "@/lib/types";
@@ -76,18 +76,19 @@ const AuthContext = createContext<AuthContextValue>({
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<MockUser | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  useEffect(() => {
+  const [user, setUser] = useState<MockUser | null>(() => {
+    if (typeof window === "undefined") return null;
     const stored = sessionStorage.getItem("agentshelf-user");
-
     if (stored) {
-      setUser(MOCK_USERS.find((u) => u.id === stored) || null);
+      return MOCK_USERS.find((u) => u.id === stored) || null;
     }
-
-    setIsHydrated(true);
-  }, []);
+    return null;
+  });
+  const isHydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   const login = useCallback((userId: string) => {
     const found = MOCK_USERS.find((u) => u.id === userId);
