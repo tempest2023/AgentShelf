@@ -33,12 +33,12 @@ export default function ChannelsTab({ product }: { product: Product }) {
   return (
     <div className="space-y-6 animate-fade-in-up">
       <div>
-        <h1 className="text-xl font-bold text-zinc-100">
+        <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
           AI Commerce Channels
         </h1>
         <p className="text-sm text-zinc-500 mt-1">
           Channel readiness for{" "}
-          <span className="text-zinc-300 font-medium">{product.title}</span>
+          <span className="text-zinc-700 dark:text-zinc-300 font-medium">{product.title}</span>
         </p>
       </div>
 
@@ -47,7 +47,7 @@ export default function ChannelsTab({ product }: { product: Product }) {
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-              <MessageSquare className="w-4 h-4 text-emerald-400" />
+              <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
               <CardTitle>ChatGPT Commercial Readiness</CardTitle>
@@ -70,7 +70,7 @@ export default function ChannelsTab({ product }: { product: Product }) {
               {chatgptPack.primaryIntents.map((intent, i) => (
                 <div
                   key={i}
-                  className="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded-lg text-xs text-zinc-300"
+                  className="px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg text-xs text-zinc-700 dark:text-zinc-300"
                 >
                   &ldquo;{intent}&rdquo;
                 </div>
@@ -84,20 +84,20 @@ export default function ChannelsTab({ product }: { product: Product }) {
               <Sparkles className="w-3 h-3" />
               Recommended Sponsored Message
             </h4>
-            <div className="relative px-4 py-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
-              <p className="text-sm text-zinc-300 leading-relaxed pr-8">
+            <div className="relative px-4 py-3 bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20 rounded-lg">
+              <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed pr-8">
                 {chatgptPack.sponsoredMessage}
               </p>
               <button
                 onClick={() =>
                   copyToClipboard(chatgptPack.sponsoredMessage, "sponsored")
                 }
-                className="absolute top-3 right-3 p-1 rounded hover:bg-zinc-800 transition-colors"
+                className="absolute top-3 right-3 p-1 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               >
                 {copiedField === "sponsored" ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                 ) : (
-                  <Copy className="w-4 h-4 text-zinc-500" />
+                  <Copy className="w-4 h-4 text-zinc-400" />
                 )}
               </button>
             </div>
@@ -109,25 +109,25 @@ export default function ChannelsTab({ product }: { product: Product }) {
               <Shield className="w-3 h-3" />
               Ad-safe Product Summary
             </h4>
-            <div className="px-4 py-3 bg-zinc-800/50 border border-zinc-800 rounded-lg">
-              <p className="text-sm text-zinc-300">{chatgptPack.adSafeSummary}</p>
+            <div className="px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+              <p className="text-sm text-zinc-700 dark:text-zinc-300">{chatgptPack.adSafeSummary}</p>
             </div>
           </div>
 
           {/* Risk Warnings */}
           <div>
             <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <AlertTriangle className="w-3 h-3 text-amber-400" />
+              <AlertTriangle className="w-3 h-3 text-amber-500" />
               Risk Warnings
             </h4>
             <div className="space-y-1.5">
               {chatgptPack.riskWarnings.map((warning, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-2 px-3 py-2 bg-amber-500/5 border border-amber-500/10 rounded-lg"
+                  className="flex items-start gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/10 rounded-lg"
                 >
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 mt-0.5 flex-shrink-0" />
-                  <span className="text-xs text-zinc-400">{warning}</span>
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500/70 mt-0.5 flex-shrink-0" />
+                  <span className="text-xs text-zinc-600 dark:text-zinc-400">{warning}</span>
                 </div>
               ))}
             </div>
@@ -142,9 +142,9 @@ export default function ChannelsTab({ product }: { product: Product }) {
               {chatgptPack.comparisonClaims.map((claim, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-3 px-3 py-2.5 bg-zinc-800/50 border border-zinc-800 rounded-lg"
+                  className="flex items-center gap-3 px-3 py-2.5 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-lg"
                 >
-                  <span className="text-xs font-medium text-zinc-300 w-28 flex-shrink-0">
+                  <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 w-28 flex-shrink-0">
                     vs {claim.competitor}
                   </span>
                   <span className="text-xs text-zinc-500">{claim.claim}</span>
@@ -162,10 +162,10 @@ export default function ChannelsTab({ product }: { product: Product }) {
               {chatgptPack.requiredFixes.map((fix, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-2 px-3 py-2 bg-zinc-800/50 border border-zinc-800 rounded-lg"
+                  className="flex items-center gap-2 px-3 py-2 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-lg"
                 >
-                  <ChevronRight className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" />
-                  <span className="text-xs text-zinc-400">{fix}</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
+                  <span className="text-xs text-zinc-600 dark:text-zinc-400">{fix}</span>
                 </div>
               ))}
             </div>
@@ -219,16 +219,16 @@ export default function ChannelsTab({ product }: { product: Product }) {
               {googleChecklist.items.map((item, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-zinc-800/50 border border-zinc-800"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800"
                 >
                   {item.status === "pass" ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                   ) : item.status === "warn" ? (
-                    <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                    <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
                   ) : (
-                    <XCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                    <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
                   )}
-                  <span className="text-sm text-zinc-300 flex-1">
+                  <span className="text-sm text-zinc-700 dark:text-zinc-300 flex-1">
                     {item.label}
                   </span>
                   {item.detail && (
@@ -246,8 +246,8 @@ export default function ChannelsTab({ product }: { product: Product }) {
             <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
               Merchant Center Feed Patch
             </h4>
-            <div className="relative bg-zinc-800/80 border border-zinc-700 rounded-lg overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-700">
+            <div className="relative bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-300 dark:border-zinc-700">
                 <span className="text-xs text-zinc-500 font-mono">feed-patch.json</span>
                 <button
                   onClick={() =>
@@ -256,12 +256,12 @@ export default function ChannelsTab({ product }: { product: Product }) {
                       "feed"
                     )
                   }
-                  className="flex items-center gap-1 px-2 py-1 rounded text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700 transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 rounded text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
                 >
                   {copiedField === "feed" ? (
                     <>
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                      <span className="text-emerald-400">Copied</span>
+                      <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                      <span className="text-emerald-600 dark:text-emerald-400">Copied</span>
                     </>
                   ) : (
                     <>
@@ -271,7 +271,7 @@ export default function ChannelsTab({ product }: { product: Product }) {
                   )}
                 </button>
               </div>
-              <pre className="p-4 text-xs text-zinc-300 font-mono overflow-x-auto">
+              <pre className="p-4 text-xs text-zinc-700 dark:text-zinc-300 font-mono overflow-x-auto">
                 {JSON.stringify(googleChecklist.feedPatch, null, 2)}
               </pre>
             </div>
@@ -311,15 +311,15 @@ function ComingSoonCard({
   color: "blue" | "purple" | "amber";
 }) {
   const colorClasses = {
-    blue: "from-blue-500/10 to-blue-600/5 border-blue-500/20",
-    purple: "from-purple-500/10 to-purple-600/5 border-purple-500/20",
-    amber: "from-amber-500/10 to-amber-600/5 border-amber-500/20",
+    blue: "from-blue-500/10 to-blue-600/5 border-blue-200 dark:border-blue-500/20",
+    purple: "from-purple-500/10 to-purple-600/5 border-purple-200 dark:border-purple-500/20",
+    amber: "from-amber-500/10 to-amber-600/5 border-amber-200 dark:border-amber-500/20",
   };
 
   const textColor = {
-    blue: "text-blue-400",
-    purple: "text-purple-400",
-    amber: "text-amber-400",
+    blue: "text-blue-600 dark:text-blue-400",
+    purple: "text-purple-600 dark:text-purple-400",
+    amber: "text-amber-600 dark:text-amber-400",
   };
 
   return (
@@ -333,8 +333,8 @@ function ComingSoonCard({
         </span>
       </div>
       <p className="text-xs text-zinc-500 mb-4">{description}</p>
-      <div className="flex items-center gap-1.5 text-xs text-zinc-600">
-        <span className="px-2 py-0.5 rounded-full bg-zinc-800/50 border border-zinc-700">
+      <div className="flex items-center gap-1.5 text-xs text-zinc-400">
+        <span className="px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-300 dark:border-zinc-700">
           Coming Soon
         </span>
       </div>

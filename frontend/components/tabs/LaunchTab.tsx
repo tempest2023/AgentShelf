@@ -53,12 +53,12 @@ export default function LaunchTab({ product }: { product: Product }) {
   return (
     <div className="space-y-6 animate-fade-in-up">
       <div>
-        <h1 className="text-xl font-bold text-zinc-100">
+        <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
           Commercial Launch Pack
         </h1>
         <p className="text-sm text-zinc-500 mt-1">
           Everything needed to launch{" "}
-          <span className="text-zinc-300 font-medium">{product.title}</span>{" "}
+          <span className="text-zinc-700 dark:text-zinc-300 font-medium">{product.title}</span>{" "}
           in AI commerce channels
         </p>
       </div>
@@ -67,7 +67,7 @@ export default function LaunchTab({ product }: { product: Product }) {
       <Card className="overflow-hidden">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-blue-400" />
+            <BarChart3 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <CardTitle>SEO vs GEO Before/After Comparison</CardTitle>
           </div>
         </CardHeader>
@@ -98,9 +98,9 @@ export default function LaunchTab({ product }: { product: Product }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-zinc-800/50 border border-zinc-800 rounded-lg p-4">
+          <div className="bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-2 h-2 rounded-full bg-zinc-500" />
+              <div className="w-2 h-2 rounded-full bg-zinc-400" />
               <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
                 Before (SEO)
               </span>
@@ -108,48 +108,48 @@ export default function LaunchTab({ product }: { product: Product }) {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-zinc-500">Channel Coverage</span>
-                <span className="text-zinc-400">
+                <span className="text-zinc-700 dark:text-zinc-400">
                   {comparison.seoMetrics.channelCoverage}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-zinc-500">Traffic</span>
-                <span className="text-zinc-400">
+                <span className="text-zinc-700 dark:text-zinc-400">
                   {comparison.seoMetrics.estimatedMonthlyTraffic.toLocaleString()}/mo
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-zinc-500">Conversion</span>
-                <span className="text-zinc-400">
+                <span className="text-zinc-700 dark:text-zinc-400">
                   {comparison.seoMetrics.conversionRate}%
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-4">
+          <div className="bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span className="text-xs font-medium text-emerald-400 uppercase tracking-wider">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
                 After (GEO)
               </span>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-zinc-500">Channel Coverage</span>
-                <span className="text-zinc-300">
+                <span className="text-zinc-700 dark:text-zinc-300">
                   {comparison.geoMetrics.channelCoverage.join(", ")}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-zinc-500">Traffic</span>
-                <span className="text-emerald-400 font-medium">
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                   {comparison.geoMetrics.estimatedMonthlyTraffic.toLocaleString()}/mo
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-zinc-500">Conversion</span>
-                <span className="text-emerald-400 font-medium">
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                   {comparison.geoMetrics.conversionRate}%
                 </span>
               </div>
@@ -167,18 +167,18 @@ export default function LaunchTab({ product }: { product: Product }) {
             onClick={() => setShowJsonLd(!showJsonLd)}
           >
             <div className="flex items-center gap-2">
-              <Code2 className="w-4 h-4 text-blue-400" />
+              <Code2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <CardTitle>JSON-LD Product Schema</CardTitle>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="success">Generated</Badge>
-              <Eye className="w-4 h-4 text-zinc-500" />
+              <Eye className="w-4 h-4 text-zinc-400" />
             </div>
           </div>
           {showJsonLd && schemaFix && (
             <div className="mt-4 animate-fade-in-up">
-              <div className="relative bg-zinc-800/80 border border-zinc-700 rounded-lg overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-700">
+              <div className="relative bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-300 dark:border-zinc-700">
                   <span className="text-xs text-zinc-500 font-mono">
                     product-schema.jsonld
                   </span>
@@ -187,12 +187,12 @@ export default function LaunchTab({ product }: { product: Product }) {
                       e.stopPropagation();
                       copyToClipboard(schemaFix.suggestedValue, "schema");
                     }}
-                    className="flex items-center gap-1 px-2 py-1 rounded text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700 transition-colors"
+                    className="flex items-center gap-1 px-2 py-1 rounded text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
                   >
                     {copiedField === "schema" ? (
                       <>
-                        <Check className="w-3 h-3 text-emerald-400" />
-                        <span className="text-emerald-400">Copied</span>
+                        <Check className="w-3 h-3 text-emerald-500" />
+                        <span className="text-emerald-600 dark:text-emerald-400">Copied</span>
                       </>
                     ) : (
                       <>
@@ -202,7 +202,7 @@ export default function LaunchTab({ product }: { product: Product }) {
                     )}
                   </button>
                 </div>
-                <pre className="p-4 text-xs text-zinc-300 font-mono overflow-x-auto max-h-60 overflow-y-auto">
+                <pre className="p-4 text-xs text-zinc-700 dark:text-zinc-300 font-mono overflow-x-auto max-h-60 overflow-y-auto">
                   {JSON.stringify(
                     JSON.parse(schemaFix.suggestedValue),
                     null,
@@ -221,12 +221,12 @@ export default function LaunchTab({ product }: { product: Product }) {
             onClick={() => setShowFaq(!showFaq)}
           >
             <div className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-emerald-400" />
+              <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <CardTitle>Structured FAQ</CardTitle>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="success">Generated</Badge>
-              <Eye className="w-4 h-4 text-zinc-500" />
+              <Eye className="w-4 h-4 text-zinc-400" />
             </div>
           </div>
           {showFaq && faqFix && (
@@ -235,12 +235,12 @@ export default function LaunchTab({ product }: { product: Product }) {
                 {parseFaq(faqFix.suggestedValue).map((item, i) => (
                   <div
                     key={i}
-                    className="bg-zinc-800/50 border border-zinc-800 rounded-lg p-3"
+                    className="bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-lg p-3"
                   >
-                    <div className="text-xs font-medium text-blue-400 mb-1.5">
+                    <div className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-1.5">
                       Q: {item.question}
                     </div>
-                    <div className="text-xs text-zinc-400">
+                    <div className="text-xs text-zinc-600 dark:text-zinc-400">
                       A: {item.answer}
                     </div>
                   </div>
@@ -250,12 +250,12 @@ export default function LaunchTab({ product }: { product: Product }) {
                 onClick={() =>
                   copyToClipboard(faqFix.suggestedValue, "faq")
                 }
-                className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+                className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               >
                 {copiedField === "faq" ? (
                   <>
-                    <Check className="w-3 h-3 text-emerald-400" />
-                    <span className="text-emerald-400">Copied</span>
+                    <Check className="w-3 h-3 text-emerald-500" />
+                    <span className="text-emerald-600 dark:text-emerald-400">Copied</span>
                   </>
                 ) : (
                   <>
@@ -273,7 +273,7 @@ export default function LaunchTab({ product }: { product: Product }) {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Rocket className="w-4 h-4 text-blue-400" />
+            <Rocket className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <CardTitle>AI Commerce Launch Checklist</CardTitle>
           </div>
           <div className="flex items-center gap-2">
@@ -294,7 +294,7 @@ export default function LaunchTab({ product }: { product: Product }) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-800">
+              <tr className="border-b border-zinc-200 dark:border-zinc-800">
                 <th className="text-left text-xs font-medium text-zinc-500 uppercase tracking-wider py-2 px-3">
                   Task
                 </th>
@@ -310,11 +310,11 @@ export default function LaunchTab({ product }: { product: Product }) {
               {launchChecklist.map((item) => (
                 <tr
                   key={item.id}
-                  className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors"
+                  className="border-b border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors"
                 >
-                  <td className="py-2.5 px-3 text-zinc-300">{item.task}</td>
+                  <td className="py-2.5 px-3 text-zinc-700 dark:text-zinc-300">{item.task}</td>
                   <td className="py-2.5 px-3">
-                    <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded">
+                    <span className="text-xs text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded">
                       {item.channel}
                     </span>
                   </td>
@@ -329,11 +329,11 @@ export default function LaunchTab({ product }: { product: Product }) {
       </Card>
 
       {/* Mock Publish */}
-      <Card className="bg-gradient-to-r from-blue-500/5 to-purple-500/5 border-blue-500/20">
+      <Card className="bg-gradient-to-r from-blue-500/5 to-purple-500/5 border-blue-200 dark:border-blue-500/20">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-              <Send className="w-4 h-4 text-blue-400" />
+            <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
+              <Send className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               Mock Publish to Shopify
             </h3>
             <p className="text-xs text-zinc-500 mt-1">
@@ -345,9 +345,9 @@ export default function LaunchTab({ product }: { product: Product }) {
             disabled={publishState !== "idle"}
             className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
               publishState === "done"
-                ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                ? "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30"
                 : publishState === "publishing"
-                ? "bg-blue-500/15 text-blue-400 border border-blue-500/30 cursor-wait"
+                ? "bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-500/30 cursor-wait"
                 : "bg-blue-600 hover:bg-blue-500 text-white"
             }`}
           >
@@ -358,7 +358,7 @@ export default function LaunchTab({ product }: { product: Product }) {
               </>
             ) : publishState === "publishing" ? (
               <>
-                <div className="w-4 h-4 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-blue-300 dark:border-blue-400/30 border-t-blue-600 dark:border-t-blue-400 rounded-full animate-spin" />
                 Publishing...
               </>
             ) : (
@@ -403,29 +403,29 @@ function ComparisonMetric({
   const isPositive = invert ? improvement < 0 : improvement > 0;
 
   return (
-    <div className="bg-zinc-800/50 border border-zinc-800 rounded-lg p-4">
+    <div className="bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4">
       <div className="text-xs text-zinc-500 uppercase tracking-wider mb-3">
         {label}
       </div>
       <div className="flex items-center gap-3">
         <div className="flex-1">
           <div className="text-xs text-zinc-500 mb-1">Before</div>
-          <div className="text-lg font-semibold text-zinc-400">
+          <div className="text-lg font-semibold text-zinc-500">
             {formatValue(before)}
           </div>
         </div>
-        <ArrowRight className="w-4 h-4 text-zinc-600" />
+        <ArrowRight className="w-4 h-4 text-zinc-300" />
         <div className="flex-1">
           <div className="text-xs text-zinc-500 mb-1">After</div>
-          <div className="text-lg font-semibold text-emerald-400">
+          <div className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
             {formatValue(after)}
           </div>
         </div>
         <div
           className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
             isPositive
-              ? "bg-emerald-500/10 text-emerald-400"
-              : "bg-red-500/10 text-red-400"
+              ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+              : "bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-400"
           }`}
         >
           {isPositive ? (
@@ -448,21 +448,21 @@ function ChecklistStatus({
   switch (status) {
     case "done":
       return (
-        <span className="flex items-center gap-1.5 text-xs text-emerald-400">
+        <span className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
           <CheckCircle2 className="w-3.5 h-3.5" />
           Done
         </span>
       );
     case "needs-review":
       return (
-        <span className="flex items-center gap-1.5 text-xs text-amber-400">
+        <span className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
           <AlertTriangle className="w-3.5 h-3.5" />
           Needs Review
         </span>
       );
     case "missing":
       return (
-        <span className="flex items-center gap-1.5 text-xs text-red-400">
+        <span className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
           <XCircle className="w-3.5 h-3.5" />
           Missing
         </span>

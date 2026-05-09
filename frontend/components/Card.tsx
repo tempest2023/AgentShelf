@@ -13,7 +13,7 @@ export default function Card({
 }: CardProps) {
   return (
     <div
-      className={`bg-zinc-900 border border-zinc-800 rounded-xl ${
+      className={`bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl ${
         padding ? "p-5" : ""
       } ${className}`}
     >
@@ -42,7 +42,7 @@ interface CardTitleProps {
 
 export function CardTitle({ children, className = "" }: CardTitleProps) {
   return (
-    <h3 className={`text-sm font-semibold text-zinc-200 ${className}`}>
+    <h3 className={`text-sm font-semibold text-zinc-800 dark:text-zinc-200 ${className}`}>
       {children}
     </h3>
   );

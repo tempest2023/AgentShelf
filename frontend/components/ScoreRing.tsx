@@ -33,7 +33,7 @@ export default function ScoreRing({
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="#27272a"
+            stroke="var(--card-border)"
             strokeWidth={strokeWidth}
           />
           <circle

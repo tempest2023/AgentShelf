@@ -9,7 +9,7 @@ import {
   ChevronDown,
   Package,
 } from "lucide-react";
-import { products, categoryLabels } from "@/lib/mock";
+import { products } from "@/lib/mock";
 import type { Category, Product } from "@/lib/types";
 
 const categoryIcons: Record<Category, React.ReactNode> = {
@@ -17,6 +17,13 @@ const categoryIcons: Record<Category, React.ReactNode> = {
   outdoor: <Mountain className="w-4 h-4" />,
   pets: <Dog className="w-4 h-4" />,
   health: <Heart className="w-4 h-4" />,
+};
+
+const categoryLabels: Record<Category, string> = {
+  electronics: "Electronics",
+  outdoor: "Outdoor & Sports",
+  pets: "Pet Supplies",
+  health: "Health & Supplements",
 };
 
 interface SidebarProps {
@@ -40,14 +47,14 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`border-r border-zinc-800 bg-zinc-900/50 flex flex-col transition-all duration-300 ${
+      className={`border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 flex flex-col transition-all duration-300 ${
         expanded ? "w-64" : "w-16"
       }`}
     >
-      <div className="p-3 border-b border-zinc-800">
+      <div className="p-3 border-b border-zinc-200 dark:border-zinc-800">
         <button
           onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-lg hover:bg-zinc-800 transition-colors"
+          className="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
         >
           <Package className="w-4 h-4 text-zinc-400 flex-shrink-0" />
           {expanded && (
@@ -67,7 +74,7 @@ export default function Sidebar({
 
       {expanded && (
         <>
-          <div className="p-2 border-b border-zinc-800">
+          <div className="p-2 border-b border-zinc-200 dark:border-zinc-800">
             <div className="flex flex-wrap gap-1">
               {categories.map((cat) => (
                 <button
@@ -75,8 +82,8 @@ export default function Sidebar({
                   onClick={() => setActiveCategory(cat)}
                   className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     activeCategory === cat
-                      ? "bg-blue-500/15 text-blue-400"
-                      : "text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+                      ? "bg-blue-500/15 text-blue-600 dark:text-blue-400"
+                      : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-300"
                   }`}
                 >
                   {categoryIcons[cat]}
@@ -94,7 +101,7 @@ export default function Sidebar({
                 className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors ${
                   selectedProduct.id === product.id
                     ? "bg-blue-500/15 border border-blue-500/30"
-                    : "hover:bg-zinc-800/70 border border-transparent"
+                    : "hover:bg-zinc-100 dark:hover:bg-zinc-800/70 border border-transparent"
                 }`}
               >
                 <div className="flex items-start gap-2.5">
@@ -102,15 +109,15 @@ export default function Sidebar({
                     className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${
                       selectedProduct.id === product.id
                         ? "bg-blue-400"
-                        : "bg-zinc-700"
+                        : "bg-zinc-300 dark:bg-zinc-700"
                     }`}
                   />
                   <div className="min-w-0">
                     <div
                       className={`text-sm font-medium truncate ${
                         selectedProduct.id === product.id
-                          ? "text-blue-300"
-                          : "text-zinc-300"
+                          ? "text-blue-600 dark:text-blue-300"
+                          : "text-zinc-700 dark:text-zinc-300"
                       }`}
                     >
                       {product.title}
