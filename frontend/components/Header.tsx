@@ -1,25 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Store, Zap, Sun, Moon } from "lucide-react";
+import { Store, Zap, Sun, Moon, Languages } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useLanguage } from "@/lib/i18n/context";
 
 interface HeaderProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
 }
 
-const tabs = [
-  { id: "geo", label: "GEO Readiness" },
-  { id: "channels", label: "AI Commerce Channels" },
-  { id: "launch", label: "Commercial Launch Pack" },
-];
-
 export default function Header({ activeTab, onTabChange }: HeaderProps) {
   const { theme, setTheme } = useTheme();
+  const { locale, setLocale, t } = useLanguage();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
+
+  const tabs = [
+    { id: "geo", label: t("header.tab.geo") },
+    { id: "channels", label: t("header.tab.channels") },
+    { id: "launch", label: t("header.tab.launch") },
+  ];
 
   return (
     <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-50">
@@ -30,14 +32,23 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
             <span className="font-semibold text-base tracking-tight">AgentShelf</span>
           </div>
           <span className="text-zinc-300 dark:text-zinc-600 text-sm hidden sm:inline">|</span>
-          <span className="text-zinc-400 dark:text-zinc-500 text-sm hidden sm:inline">AI Commerce Channel Manager</span>
+          <span className="text-zinc-400 dark:text-zinc-500 text-sm hidden sm:inline">{t("header.subtitle")}</span>
         </div>
 
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
             <Zap className="w-3 h-3" />
-            <span>Demo Mode</span>
+            <span>{t("header.demoMode")}</span>
           </div>
+
+          <button
+            onClick={() => setLocale(locale === "en" ? "zh" : "en")}
+            className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500 text-xs font-medium"
+            aria-label="Toggle language"
+          >
+            <Languages className="w-3.5 h-3.5" />
+            {locale === "en" ? "中文" : "EN"}
+          </button>
 
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
