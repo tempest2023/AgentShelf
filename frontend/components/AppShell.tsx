@@ -1,18 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
 import GEOTab from "./tabs/GEOTab";
 import ChannelsTab from "./tabs/ChannelsTab";
 import LaunchTab from "./tabs/LaunchTab";
 import { products } from "@/lib/mock";
+import { useAuth } from "@/lib/auth/context";
 import type { Product } from "@/lib/types";
 
 export default function AppShell() {
+  const { user } = useAuth();
+
+  const storeProducts = useMemo(
+    () => products.filter((p) => p.category === user?.category),
+    [user?.category]
+  );
+
   const [activeTab, setActiveTab] = useState("geo");
   const [selectedProduct, setSelectedProduct] = useState<Product>(
-    products.find((p) => p.id === "elec-004") || products[0]
+    storeProducts[0]
   );
 
   return (
@@ -20,6 +28,7 @@ export default function AppShell() {
       <Header activeTab={activeTab} onTabChange={setActiveTab} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
+          products={storeProducts}
           selectedProduct={selectedProduct}
           onSelectProduct={setSelectedProduct}
         />

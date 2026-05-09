@@ -110,6 +110,20 @@ export const en = {
   "launch.publishNow": "Publish Now",
   "launch.publishing": "Publishing...",
   "launch.published": "Published",
+  // Login
+  "login.title": "Sign in to AgentShelf",
+  "login.subtitle": "Choose an account to explore its store dashboard",
+  "login.continueAs": "Continue as",
+  "login.products": "products",
+  "login.electronics": "Electronics",
+  "login.outdoor": "Outdoor & Sports",
+  "login.pets": "Pet Supplies",
+  "login.health": "Health & Supplements",
+  "login.footer": "Mock accounts for demo purposes",
+
+  // Header user
+  "header.store": "Store",
+  "header.logout": "Sign Out",
 } as const;
 
 export type TranslationKey = keyof typeof en;

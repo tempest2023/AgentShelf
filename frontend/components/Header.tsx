@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Store, Sun, Moon, Languages } from "lucide-react";
+import { Store, Sun, Moon, Languages, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useLanguage } from "@/lib/i18n/context";
+import { useAuth } from "@/lib/auth/context";
 
 interface HeaderProps {
   activeTab: string;
@@ -13,6 +14,7 @@ interface HeaderProps {
 export default function Header({ activeTab, onTabChange }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const { locale, setLocale, t } = useLanguage();
+  const { user, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -23,6 +25,12 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
     { id: "launch", label: t("header.tab.launch") },
   ];
 
+  const storeName = user
+    ? locale === "zh"
+      ? user.storeNameZh
+      : user.storeName
+    : "";
+
   return (
     <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="flex items-center justify-between px-6 h-14">
@@ -32,7 +40,7 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
             <span className="font-semibold text-base tracking-tight">AgentShelf</span>
           </div>
           <span className="text-zinc-300 dark:text-zinc-600 text-sm hidden sm:inline">|</span>
-          <span className="text-zinc-400 dark:text-zinc-500 text-sm hidden sm:inline">{t("header.subtitle")}</span>
+          <span className="text-zinc-700 dark:text-zinc-300 text-sm font-medium hidden sm:inline">{storeName}</span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -55,6 +63,15 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
             ) : (
               <Moon className="w-4 h-4" />
             )}
+          </button>
+
+          <button
+            onClick={logout}
+            className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500 text-xs font-medium"
+            aria-label={t("header.logout")}
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{t("header.logout")}</span>
           </button>
         </div>
       </div>

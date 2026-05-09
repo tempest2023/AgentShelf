@@ -108,4 +108,19 @@ export const zh: Record<TranslationKey, string> = {
   "launch.publishNow": "立即发布",
   "launch.publishing": "发布中...",
   "launch.published": "已发布",
+
+  // Login
+  "login.title": "登录 AgentShelf",
+  "login.subtitle": "选择一个账号以浏览其店铺后台",
+  "login.continueAs": "以",
+  "login.products": "件商品",
+  "login.electronics": "电子产品",
+  "login.outdoor": "户外运动",
+  "login.pets": "宠物用品",
+  "login.health": "保健品",
+  "login.footer": "演示用模拟账号",
+
+  // Header user
+  "header.store": "店铺",
+  "header.logout": "退出登录",
 };
