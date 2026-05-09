@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Store, Zap, Sun, Moon, Languages } from "lucide-react";
+import { Store, Sun, Moon, Languages } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useLanguage } from "@/lib/i18n/context";
 
@@ -36,11 +36,6 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
-            <Zap className="w-3 h-3" />
-            <span>{t("header.demoMode")}</span>
-          </div>
-
           <button
             onClick={() => setLocale(locale === "en" ? "zh" : "en")}
             className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500 text-xs font-medium"
