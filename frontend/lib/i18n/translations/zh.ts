@@ -123,4 +123,34 @@ export const zh: Record<TranslationKey, string> = {
   // Header user
   "header.store": "店铺",
   "header.logout": "退出登录",
+  "header.importData": "导入数据",
+
+  // Onboarding
+  "onboarding.title": "导入您的店铺数据",
+  "onboarding.subtitle": "连接您的电商平台，开始使用 AI 驱动的商品优化",
+  "onboarding.selectPlatform": "选择您的平台",
+  "onboarding.shopify": "Shopify",
+  "onboarding.shopifyDesc": "从 Shopify 店铺导入商品",
+  "onboarding.stripe": "Stripe",
+  "onboarding.stripeDesc": "从 Stripe 导入商品",
+  "onboarding.tiktok": "TikTok Shop",
+  "onboarding.tiktokDesc": "从 TikTok Shop 导入商品",
+  "onboarding.amazon": "Amazon",
+  "onboarding.amazonDesc": "从 Amazon Seller Central 导入",
+  "onboarding.skip": "暂时跳过",
+
+  // Import Animation
+  "import.connecting": "正在连接",
+  "import.fetching": "正在获取商品数据",
+  "import.syncing": "正在同步库存",
+  "import.optimizing": "正在优化 AI 商业数据",
+  "import.complete": "导入完成！",
+  "import.productsImported": "件商品导入成功",
+  "import.continue": "进入仪表盘",
+  "import.importing": "正在从",
+
+  // Import Modal
+  "importModal.title": "导入新数据",
+  "importModal.subtitle": "连接其他平台或重新导入现有数据",
+  "importModal.close": "关闭",
 };

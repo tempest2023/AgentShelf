@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Store, Sun, Moon, Languages, LogOut } from "lucide-react";
+import { Store, Sun, Moon, Languages, LogOut, Download } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useLanguage } from "@/lib/i18n/context";
 import { useAuth } from "@/lib/auth/context";
+import ImportModal from "./ImportModal";
 
 interface HeaderProps {
   activeTab: string;
@@ -16,6 +17,7 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
   const { locale, setLocale, t } = useLanguage();
   const { user, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => setMounted(true), []);
 
@@ -66,6 +68,15 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
           </button>
 
           <button
+            onClick={() => setImportOpen(true)}
+            className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500 text-xs font-medium"
+            aria-label={t("header.importData")}
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{t("header.importData")}</span>
+          </button>
+
+          <button
             onClick={logout}
             className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500 text-xs font-medium"
             aria-label={t("header.logout")}
@@ -91,6 +102,8 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
           </button>
         ))}
       </nav>
+
+      <ImportModal isOpen={importOpen} onClose={() => setImportOpen(false)} />
     </header>
   );
 }

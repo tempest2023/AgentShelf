@@ -117,3 +117,55 @@ body {
 .stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
 .stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
 .stagger-children > *:nth-child(8) { animation-delay: 0.4s; }
+
+/* Import animation - progress bar fill */
+@keyframes import-progress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+.import-progress-bar {
+  animation: import-progress 1.5s ease-out forwards;
+}
+
+/* Import animation - pulse glow */
+@keyframes import-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+.import-pulse {
+  animation: import-pulse 1.5s ease-in-out infinite;
+}
+
+/* Import animation - checkmark draw */
+@keyframes import-check {
+  0% { stroke-dashoffset: 24; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.import-check {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: import-check 0.4s ease-out 0.2s forwards;
+}
+
+/* Import animation - slide in from right */
+@keyframes import-slide {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.import-slide {
+  animation: import-slide 0.3s ease-out forwards;
+}
+
+/* Import animation - spinner */
+@keyframes import-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.import-spin {
+  animation: import-spin 1s linear infinite;
+}

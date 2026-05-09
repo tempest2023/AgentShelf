@@ -1,11 +1,36 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth/context";
 import AppShell from "@/components/AppShell";
 import LoginPage from "@/components/LoginPage";
+import OnboardingFlow from "@/components/OnboardingFlow";
+
+const ONBOARDING_KEY = "agentshelf-onboarding-complete";
+
+function isNewUser(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(ONBOARDING_KEY) !== "true";
+}
 
 export default function Home() {
   const { user, isHydrated } = useAuth();
+  const [onboardingNeeded, setOnboardingNeeded] = useState(false);
+  const [checkedOnboarding, setCheckedOnboarding] = useState(false);
+
+  useEffect(() => {
+    if (isHydrated && user) {
+      setOnboardingNeeded(isNewUser());
+      setCheckedOnboarding(true);
+    } else if (isHydrated && !user) {
+      setCheckedOnboarding(true);
+    }
+  }, [isHydrated, user]);
+
+  const handleOnboardingComplete = useCallback(() => {
+    localStorage.setItem(ONBOARDING_KEY, "true");
+    setOnboardingNeeded(false);
+  }, []);
 
   if (!isHydrated) {
     return (
@@ -27,6 +52,10 @@ export default function Home() {
 
   if (!user) {
     return <LoginPage />;
+  }
+
+  if (checkedOnboarding && onboardingNeeded) {
+    return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 
   return <AppShell />;

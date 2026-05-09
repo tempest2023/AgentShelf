@@ -124,6 +124,36 @@ export const en = {
   // Header user
   "header.store": "Store",
   "header.logout": "Sign Out",
+  "header.importData": "Import Data",
+
+  // Onboarding
+  "onboarding.title": "Import Your Store Data",
+  "onboarding.subtitle": "Connect your e-commerce platform to get started with AI-powered product optimization",
+  "onboarding.selectPlatform": "Select your platform",
+  "onboarding.shopify": "Shopify",
+  "onboarding.shopifyDesc": "Import products from your Shopify store",
+  "onboarding.stripe": "Stripe",
+  "onboarding.stripeDesc": "Import products from Stripe",
+  "onboarding.tiktok": "TikTok Shop",
+  "onboarding.tiktokDesc": "Import products from TikTok Shop",
+  "onboarding.amazon": "Amazon",
+  "onboarding.amazonDesc": "Import from Amazon Seller Central",
+  "onboarding.skip": "Skip for now",
+
+  // Import Animation
+  "import.connecting": "Connecting to",
+  "import.fetching": "Fetching product data",
+  "import.syncing": "Syncing inventory",
+  "import.optimizing": "Optimizing for AI commerce",
+  "import.complete": "Import Complete!",
+  "import.productsImported": "products imported successfully",
+  "import.continue": "Continue to Dashboard",
+  "import.importing": "Importing from",
+
+  // Import Modal
+  "importModal.title": "Import New Data",
+  "importModal.subtitle": "Connect another platform or re-import existing data",
+  "importModal.close": "Close",
 } as const;
 
 export type TranslationKey = keyof typeof en;
