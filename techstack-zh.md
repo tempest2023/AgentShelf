@@ -1,6 +1,6 @@
 ## AgentShelf 的技术组合
 
-**CopilotKit + Gemini + LangChain + MCP mock tools**
+**CopilotKit + OpenAI + LangChain + Daytona**
 
 ### 1. CopilotKit：前端核心
 
@@ -9,8 +9,9 @@
 * AI Chat / Copilot sidebar
 * 生成 GEO Readiness Dashboard
 * 动态渲染 Product Cards
-* 用户点击 “Fix Description / Generate FAQ / Generate Schema”
+* 用户点击 "Fix Description / Generate FAQ / Generate Schema"
 * Agent 根据用户操作更新 UI
+* SEO vs GEO Before/After 对比面板
 
 #### 简单接入示例
 
@@ -33,15 +34,17 @@ export default function App() {
 }
 ```
 
-### 2. OpenAI API 分析商品目录
+### 2. OpenAI API：核心 AI 引擎
 
-用 OpenAI API 做核心 AI reasoning：
+使用 OpenAI API 作为核心 AI reasoning 引擎（主模型：GPT-5.5）：
 
 * 读取 Shopify product JSON
 * 评估商品是否容易被 AI 推荐
 * 识别缺失字段
 * 生成 customer query intents
 * 生成优化后的 description / FAQ / comparison table
+* 生成 SEO vs GEO 对比数据
+* 支持接入 Google Gemini 模型 API（可选切换）
 
 #### 简单接入示例
 
@@ -58,17 +61,17 @@ const openai = new OpenAI({
 
 async function main() {
   const completion = await openai.chat.completions.create({
-    messages: [{ role: "user", content: "Explain Node.js in one sentence." }],
-    model: "gpt-4o",
+    messages: [{ role: "user", content: "Analyze this product for AI commerce readiness..." }],
+    model: "gpt-5.5",
   });
   console.log(completion.choices[0].message.content);
 }
 main();
 ```
 
-### 3. LangChain：组织 workflow
+### 3. LangChain：Agent 工作流编排
 
-用 LangChain 管理整个流程：
+用 LangChain 管理整个 Agent 工作流：
 
 ```text
 Catalog Input
@@ -77,6 +80,7 @@ Catalog Input
 → AI Shopping Query Simulator
 → GEO Fix Generator
 → Structured Schema Generator
+→ SEO vs GEO Comparison Generator
 → UI State Update
 ```
 
@@ -90,67 +94,22 @@ npm install langchain @langchain/openai
 import { ChatOpenAI } from "@langchain/openai";
 
 const model = new ChatOpenAI({
-  model: "gpt-4o",
-  apiKey: process.env.OPENAI_API_KEY, 
+  model: "gpt-5.5",
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-const response = await model.invoke("Hello, how are you?");
+const response = await model.invoke("Analyze product readiness for AI commerce channels...");
 console.log(response.content);
 ```
 
-### 4. Manufact MCP：做成可被 agent 调用的 commerce tools
+### 4. Daytona：沙箱执行环境
 
-可以设计几个 MCP-style tools：
-
-```text
-get_product_catalog()
-audit_product_readiness(product)
-generate_geo_faq(product)
-generate_product_schema(product)
-simulate_ai_shopping_query(product, query)
-publish_shopify_patch(product_id, patch)
-```
-
-#### 简单接入示例
-
-使用 `@modelcontextprotocol/sdk` 快速构建 MCP Server：
-
-```bash
-npm install @modelcontextprotocol/sdk zod
-```
-
-```typescript
-import { McpServer } from "@modelcontextprotocol/server";
-import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
-
-const server = new McpServer({
-  name: "commerce-tools",
-  version: "1.0.0",
-});
-
-server.registerTool(
-  "get_product_catalog",
-  "获取商品目录",
-  {},
-  async () => ({
-    content: [{ type: "text", text: "Product JSON data..." }],
-  })
-);
-
-async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-}
-main().catch(console.error);
-```
-
-### 5. Daytona
-
-Daytona 可以用来跑安全的 batch audit：
+Daytona 用于安全执行 AI 生成的代码和批量任务：
 
 * 验证 JSON-LD schema 是否合法
 * 批量检查 product catalog
 * 生成 downloadable audit report
+* 安全执行 AI 生成的优化代码
 
 #### 简单接入示例
 
@@ -175,25 +134,47 @@ daytona init
 daytona up
 ```
 
+### 5. Google Gemini API（可选）
+
+在 OpenAI 接入完成后，可快速接入 Google Gemini 模型 API：
+
+```bash
+npm install @google/generative-ai
+```
+
+```javascript
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+const result = await model.generateContent("Analyze product readiness...");
+console.log(result.response.text());
+```
+
 ## MVP 架构
 
 ```text
-React / Next.js frontend
+React / Next.js frontend (Tailwind UI)
         ↓
-CopilotKit AG-UI layer
+CopilotKit Agentic UI Layer
         ↓
-LangChain Agent
+LangChain Agent (Controller / API Route)
         ↓
-Gemini model
+OpenAI GPT-5.5 (主模型) / Gemini (可选)
         ↓
-MCP-style tools:
-  - Shopify catalog mock
-  - GEO audit tool
-  - FAQ generator
-  - schema generator
-  - AI shopping preview simulator
+Daytona Sandbox (Schema Validation / Batch Audit)
+        ↓
+Core Tools:
+  - get_product_catalog() → Mock Shopify catalog (电子产品/户外/宠物/保健品)
+  - audit_product_readiness() → GEO readiness 评分
+  - generate_geo_faq() → FAQ 生成
+  - generate_product_schema() → JSON-LD 生成
+  - simulate_ai_shopping_query() → AI 购物查询模拟
+  - generate_seo_geo_comparison() → SEO vs GEO 对比数据
+  - apply_mock_patch() → Mock Shopify 更新
 ```
 
 ## Demo 里可以明确说
 
-> AgentShelf uses CopilotKit’s agentic frontend stack to turn AI analysis into interactive commerce UI, Gemini for product-readiness reasoning, LangChain for multi-step agent orchestration, and MCP-style tools for catalog auditing, schema generation, and Shopify patch simulation.
+> AgentShelf uses CopilotKit's agentic frontend stack to turn AI analysis into interactive commerce UI, OpenAI GPT-5.5 for product-readiness reasoning, LangChain for multi-step agent orchestration, and Daytona for secure schema validation and batch auditing. The platform helps merchants optimize their product data for ChatGPT Ads and Google AI Mode, turning traditional SEO into GEO — Generative Engine Optimization.

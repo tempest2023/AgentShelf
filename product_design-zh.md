@@ -9,9 +9,9 @@
 传统电商增长主要依赖：`SEO + Google Ads + Meta Ads + Shopify Store`
 而在 AI Commerce 时代，流量入口正在发生根本性转变：`GEO + AI Answer Engine Visibility + Agent Shopping Readiness + AI-native Ads`
 
-* **OpenAI**: 已经开始测试 ChatGPT 广告，并强调广告可以在用户“探索选项、比较方案、权衡取舍、做决策”时触达用户，且清晰标注不影响自然回答。
+* **OpenAI**: 已经开始测试 ChatGPT 广告，并强调广告可以在用户"探索选项、比较方案、权衡取舍、做决策"时触达用户，且清晰标注不影响自然回答。
 * **Google**: 将 AI 搜索与商业化深度结合，Google Merchant Center 的商品数据规范明确表示会用商家提交的数据匹配相关查询。
-* **Perplexity 等 Answer Engines**: 代表了未来的问答式搜索引擎曝光渠道。
+* **Perplexity**: 在 C 端增长显著，与商业合作日益密切，代表了未来 answer engine 商业化的重要方向，是我们的下一个重点目标。
 
 **痛点**: 商家不知道如何让自己的商品在这些 AI 渠道中被正确理解和推荐，缺乏针对性的内容准备和渠道管理工具。
 
@@ -21,18 +21,17 @@
 **目标**:
 让商家看到自己的商品在不同 AI Commerce 渠道中的准备情况。
 
-**支持渠道**:
-Hackathon MVP 可以展示以下渠道卡片：
+**MVP 聚焦渠道**:
 
-| Channel | Current Status | MVP 实现方式 |
+| Channel | 定位 | MVP 实现方式 |
 | --- | --- | --- |
-| ChatGPT / OpenAI Ads | Coming / Pilot-ready | Mock 接入状态 + 商业意图匹配分析 |
-| Google AI Mode / Merchant Center | Ready to prepare | Mock Merchant Center readiness check |
-| Perplexity | Monitor / Future-ready | Mock Answer Engine visibility preview |
-| Claude | No merchant ads yet | 只做 GEO readiness compatibility |
-| Gemini | Google ecosystem-ready | Mock Google AI shopping readiness |
+| ChatGPT / OpenAI Ads | 核心渠道（C 端流量最大） | 完整实现 Commercial Readiness 分析 |
+| Google AI Mode / Merchant Center | 核心渠道（C 端流量最大） | 完整实现 Merchant Center readiness check |
+| Perplexity | 下一目标（C 端增长显著） | Coming Soon 卡片 + GEO readiness 预览 |
+| Claude | 未来渠道 | Coming Soon 卡片 |
+| Gemini | 未来渠道 | Coming Soon 卡片 |
 
-**UI 展示**:
+**核心渠道 UI 展示**:
 每个渠道展示：
 * Channel readiness score
 * Product feed compatibility
@@ -72,10 +71,10 @@ OpenAI 的广告逻辑不同于传统搜索广告。OpenAI 官方描述的核心
 **AgentShelf 功能**:
 AgentShelf 可以生成一个 ChatGPT Commercial Pack：
 * **Commercial Intent Map**
-  * “best sunscreen for oily skin”
-  * “mineral sunscreen under $30”
-  * “non-greasy sunscreen for acne-prone skin”
-  * “daily sunscreen that works under makeup”
+  * "best noise cancelling headphones under $200"
+  * "ThinkPad vs MacBook for programming"
+  * "lightweight hiking boots for women"
+  * "dog harness for large dogs that pull"
 * **Sponsored Placement Readiness**
   * 商品是否适合被展示为 sponsored product / service
   * 是否有足够清晰的购买场景
@@ -84,7 +83,7 @@ AgentShelf 可以生成一个 ChatGPT Commercial Pack：
   * 简短、可信、不过度承诺的商品描述
 * **Comparison Claims**
   * 和竞品相比的差异点
-  * 避免医疗化、夸大化表述
+  * 避免夸大化表述
 * **Landing Page Fixes**
   * 为 ChatGPT commercial traffic 准备的商品页优化建议
 
@@ -93,18 +92,18 @@ AgentShelf 可以生成一个 ChatGPT Commercial Pack：
 ChatGPT Commercial Pack
 
 Primary Intent:
-"Best lightweight sunscreen under $30 for oily acne-prone skin"
+"Best noise cancelling headphones under $200 for commuting"
 
 Recommended Sponsored Message:
-"ClearGlow is a lightweight mineral SPF 30 sunscreen designed for oily-skin routines, with a non-greasy finish and daily-wear texture."
+"Sony WH-1000XM5 offers industry-leading noise cancellation with 30-hour battery life, designed for daily commuters and frequent travelers."
 
 Risk Warning:
-Avoid claiming "prevents acne" unless clinically supported.
+Avoid claiming "best noise cancellation" without referencing a specific test standard.
 
 Required Fixes:
-- Add non-comedogenic clarification
-- Add under-makeup FAQ
-- Add texture comparison
+- Add commute/work-from-home use case
+- Add comparison with AirPods Max
+- Add comfort FAQ for long wear
 - Add return and shipping policy
 ```
 
@@ -146,54 +145,59 @@ Generate Google Merchant Center feed patch
 **可以生成的 Mock Output**:
 ```json
 {
-  "title": "ClearGlow Lightweight Mineral Sunscreen SPF 30 for Oily Skin",
-  "brand": "ClearGlow",
-  "price": "24.00 USD",
+  "title": "Sony WH-1000XM5 Wireless Noise Cancelling Headphones - Black",
+  "brand": "Sony",
+  "price": "198.00 USD",
   "availability": "in_stock",
   "condition": "new",
-  "product_type": "Beauty > Skin Care > Sunscreen",
-  "description": "A lightweight mineral SPF 30 sunscreen designed for oily and acne-prone routines.",
+  "product_type": "Electronics > Audio > Headphones > Over-Ear",
+  "description": "Industry-leading noise cancellation with Auto NC Optimizer, 30-hour battery life, and ultra-comfortable design for all-day wear.",
   "shipping": "Free shipping over $35",
   "return_policy": "30-day returns"
 }
 ```
 
-### 3.4 Perplexity / Answer Engine Visibility Preview
+### 3.4 SEO vs GEO Before/After 对比 (核心展示)
+**目标**:
+在同一页面中，直观展示商家在传统 SEO 和 AI Commerce (GEO) 之间的流量与转化差异，让评委一眼看到产品的商业价值。
+
+**对比维度**:
+
+| 指标 | SEO (传统) | GEO (AI Commerce) | 变化 |
+| --- | --- | --- | --- |
+| 预估月流量 | 基于当前搜索量 | 基于 AI 搜索渗透率预估 | ↑ 增长百分比 |
+| 转化率 | 品类平均 SEO 转化率 | 预估 GEO 转化率 | ↑ 提升 |
+| 单次获客成本 (CAC) | 当前 Google Ads CPC | AI 渠道预估 CAC | ↓ 降低 |
+| 渠道覆盖 | Google Search only | ChatGPT + Google AI + Perplexity | 3x |
+
+**品类转化率参考数据** (MVP 使用固定数据):
+
+| 品类 | SEO 平均转化率 | GEO 预估转化率 | 说明 |
+| --- | --- | --- | --- |
+| 电子产品 | 1.5-2.5% | 4-6% | AI 推荐场景匹配度高 |
+| 户外运动 | 2-3% | 5-7% | 使用场景明确，AI 容易匹配 |
+| 宠物用品 | 2.5-3.5% | 5-8% | 需求描述具体，推荐精准 |
+| 保健品 | 1.5-2% | 3-5% | 需要信任建设，AI 推荐有优势 |
+
+**UI 展示方式**:
+左侧展示 "Before"（当前 SEO 状态），右侧展示 "After"（GEO 优化后预估），中间用箭头和百分比标注提升幅度。评委可以一眼看到：**优化后，这个商品在 AI 搜索中被推荐的概率提升了多少，预估能带来多少新增流量和转化。**
+
+### 3.5 Perplexity / Answer Engine Visibility (下一目标)
 **背景**:
-Perplexity 之前测试过 sponsored follow-up questions 这种广告形式，广告以赞助问题的方式出现在答案旁边，且答案由 Perplexity 生成，而不是由广告主直接撰写。
-
-不过 Perplexity 的广告策略存在变化。有报道显示 Perplexity 后来暂停了广告测试，理由是即使标注广告，也可能影响 AI answer engine 的可信度。
-
-所以在设计文档里不要把 Perplexity 写成“已经有稳定广告 API”。更准确的说法是：
-> Perplexity represents an answer-engine visibility channel. AgentShelf prepares merchants for future sponsored or organic answer-engine surfaces, but does not assume a stable Perplexity merchant ads API today.
+Perplexity 在 C 端增长显著，与商业合作日益密切。虽然其广告策略仍在演进中，但作为 answer engine 商业化的代表，是我们的下一个重点目标。
 
 **功能**:
-Perplexity 模块应聚焦于：
+Perplexity 模块在 MVP 中作为 "Coming Soon" 卡片展示，核心聚焦于：
 * 商品是否容易被 answer engine 引用
 * 商品页是否有可信来源
 * 是否有清晰 FAQ
 * 是否能被 AI 生成对比答案
 * 是否有可引用的 structured claims
-* 是否有 source-friendly product content
 
-**MVP UI 示例**:
-```text
-Perplexity Visibility Preview
+**MVP UI 展示**:
+以 Coming Soon 卡片形式展示，点击后显示 GEO readiness 预览和"即将支持"提示。
 
-User Query:
-"What is a good mineral sunscreen for oily skin under $30?"
-
-Likely Answer Engine Behavior:
-Perplexity may cite pages with clear product specs, third-party reviews, and structured comparison content.
-
-Weakness:
-Your product page lacks source-friendly FAQ and comparison content.
-
-Recommended Fix:
-Generate answer-engine FAQ and comparison block.
-```
-
-### 3.5 AI Commerce Launch Checklist
+### 3.6 AI Commerce Launch Checklist
 **目标**: 提供跨渠道的执行清单，用于统一追踪发布进度。
 **示例 Checklist**:
 
@@ -213,24 +217,68 @@ Generate answer-engine FAQ and comparison block.
 ## 4. Hackathon MVP 落地范围 (MVP Scope)
 在 Hackathon 期间，不实际接入 OpenAI Ads 或 Google Merchant Center 的真实 API，而是通过 Mock Data 实现以下三个核心 Tab：
 1. **Tab 1: GEO Readiness**: 商品评分、缺失信号检查、Query Simulator、GEO Fix。
-2. **Tab 2: AI Commerce Channels**: 各大 AI 渠道（ChatGPT, Google, Perplexity 等）的准备度卡片。
-3. **Tab 3: Commercial Launch Pack**: 包含意图映射、Feed Patch、FAQ、JSON-LD 以及 Mock Publish Checklist。
+2. **Tab 2: AI Commerce Channels**: ChatGPT + Google AI Mode 完整展示，Perplexity 等渠道 Coming Soon 卡片。
+3. **Tab 3: Commercial Launch Pack**: 包含意图映射、Feed Patch、FAQ、JSON-LD、SEO vs GEO Before/After 对比以及 Mock Publish Checklist。
+
+### 4.1 Mock 商品数据方案
+Demo 中使用预置的商品目录，覆盖以下品类，让评委可以选择不同品类的商品体验产品功能：
+
+**品类 1：电子产品商家**
+* Apple MacBook Pro 14" M3
+* Apple MacBook Air 15" M3
+* Apple iPhone 15 Pro Max
+* Apple AirPods Pro 2
+* Apple AirPods Max
+* ThinkPad X1 Carbon Gen 11
+* Samsung Galaxy S24 Ultra
+* Google Pixel 8 Pro
+* 自组装台式机 (高配游戏 / 设计工作站)
+* Google Pixel Buds Pro
+
+**品类 2：户外运动商家**
+* 户外防水背包 (30L / 50L)
+* 登山鞋 (男款 / 女款)
+* 涉水鞋
+* 登山杖 (碳纤维 / 铝合金)
+* 冲锋衣 (Gore-Tex)
+* 户外帐篷 (2人 / 4人)
+* 头灯
+* 保温水壶
+
+**品类 3：宠物用品商家**
+* 户外狗链 (大犬 / 中犬)
+* 猫粮 (室内猫 / 幼猫)
+* 狗粮 (大型犬 / 小型犬)
+* 宠物服饰 (雨衣 / 冬装)
+* 猫抓板
+* 宠物自动喂食器
+* 宠物背包
+
+**品类 4：保健品商家**
+* 鱼油胶囊 (Omega-3)
+* 维生素 D3
+* 益生菌胶囊
+* 胶原蛋白粉
+* 褪黑素片
+* 复合维生素 (男款 / 女款)
+* 蛋白粉 (乳清 / 植物基)
 
 ## 5. 系统架构与技术栈 (System Architecture & Tech Stack)
-**核心技术组合**: CopilotKit + Gemini + LangChain + MCP mock tools
+**核心技术组合**: CopilotKit + OpenAI + LangChain + Daytona
 
 ### 5.1 技术组件选型
 * **前端与交互 (Frontend & Agentic UI)**:
   * 框架：**Next.js / React / Tailwind CSS**
   * 交互：**CopilotKit**。用于实现 AI Chat / Copilot sidebar、生成 GEO Readiness Dashboard、动态渲染交互式卡片（如点击 "Fix Description" 后 Agent 直接更新 UI）。
 * **核心 AI 引擎 (AI Model)**:
-  * 模型：**Google Gemini** (或 OpenAI)。
+  * 模型：**OpenAI GPT-5.5**（主模型）。
   * 职责：读取 Shopify product JSON，评估 AI 推荐潜力，识别缺失字段，生成 user query intents，以及生成优化后的文案（description / FAQ / schema）。
+  * 备注：支持接入 Google Gemini 模型 API，在 OpenAI 接入完成后可快速切换。
 * **工作流管理 (Workflow Layer)**:
   * 框架：**LangChain**。
   * 职责：编排多步 Agent 逻辑：`Catalog Input → Audit Agent → Missing Signal Detector → Simulator → GEO Fix Generator → UI Update`。
-* **工具与集成层 (Tools Layer)**:
-  * 规范：**MCP-style mock tools**。封装为 Agent 可调用的 commerce tools，如拉取商品、生成 FAQ、打补丁等。
+* **沙箱执行环境 (Sandbox)**:
+  * 工具：**Daytona**。用于安全执行 AI 生成的代码，如 JSON-LD schema 验证、批量 catalog 检查等。
 * **批量任务 (Batch Auditing) - 可选**:
   * 工具：**Daytona**。用于安全的批量检查 JSON-LD schema，生成下载报告。
 
@@ -242,15 +290,17 @@ CopilotKit Agentic UI Layer
         ↓
 LangChain Agent (Controller / API Route)
         ↓
-Google Gemini (LLM)
+OpenAI GPT-5.5 (LLM)
         ↓
-MCP-Style Tools:
-  - get_product_catalog()
-  - audit_product_readiness()
-  - generate_geo_faq()
-  - generate_product_schema()
-  - simulate_ai_shopping_query()
-  - apply_mock_patch()
+Daytona Sandbox (Schema Validation / Batch Audit)
+        ↓
+Core Tools:
+  - get_product_catalog() → Mock Shopify catalog
+  - audit_product_readiness() → GEO readiness 评分
+  - generate_geo_faq() → FAQ 生成
+  - generate_product_schema() → JSON-LD 生成
+  - simulate_ai_shopping_query() → AI 购物查询模拟
+  - apply_mock_patch() → Mock Shopify 更新
         ↓
 Updated Interactive Dashboard
 ```
@@ -266,10 +316,16 @@ type Product = {
   category: string;
   price: number;
   description: string;
+  brand: string;
+  gtin?: string;
+  sku?: string;
   ingredients?: string[];
   targetAudience?: string[];
   attributes?: Record<string, string>;
   reviews?: { rating: number; count: number; summary: string; };
+  images?: string[];
+  shippingPolicy?: string;
+  returnPolicy?: string;
 };
 
 // 审核结果对象
@@ -297,52 +353,89 @@ type QuerySimulation = {
   matches: { productId: string; matchScore: number; reason: string; missingSignals: string[]; }[];
   agentPreviewAnswer: string;
 };
+
+// SEO vs GEO 对比数据
+type SeoGeoComparison = {
+  productId: string;
+  category: string;
+  seoMetrics: {
+    estimatedMonthlyTraffic: number;
+    conversionRate: number;
+    cac: number;
+    channelCoverage: string;
+  };
+  geoMetrics: {
+    estimatedMonthlyTraffic: number;
+    conversionRate: number;
+    cac: number;
+    channelCoverage: string[];
+  };
+  improvementPercent: {
+    traffic: number;
+    conversion: number;
+    cacReduction: number;
+  };
+};
 ```
 
-### 6.2 核心 Tool/API 设计 (MCP Tools)
-* `getProductCatalog(catalogId)`: 返回 Mock 的美妆护肤品类 catalog。
+### 6.2 核心 Tool/API 设计
+* `getProductCatalog(catalogId)`: 返回 Mock 的商品目录（支持电子产品 / 户外运动 / 宠物用品 / 保健品）。
 * `auditProductReadiness(product)`: 返回商品各维度的评分和 missing signals。
-* `simulateShoppingQuery(query, catalog)`: 模拟 AI 购物助手针对特定 query（如“适合痘痘肌的防晒”）的召回逻辑。
+* `simulateShoppingQuery(query, catalog)`: 模拟 AI 购物助手针对特定 query 的召回逻辑。
 * `generateGeoFixes(product, queryContext)`: 返回优化后的标题、描述、FAQ、比较表格和 JSON-LD。
 * `applyMockPatch(productId, patch)`: 更新本地 UI 状态，模拟将改动同步至 Shopify。
+* `generateSeoGeoComparison(product, category)`: 生成 SEO vs GEO 的流量和转化对比数据。
 
 ## 7. Demo 流程设计 / User Story (Demo Flow)
 
-### Scene 1：从 SEO 到 GEO，再到 AI Commerce
-**旁白**：
-> Search is becoming conversational, and commerce is moving into AI assistants. Brands no longer only need SEO. They need to be readable, recommendable, and commercially ready across AI channels.
-
-### Scene 2：商品 GEO Audit
-**展示**：原有 Dashboard，商家选择特定商品 **“ClearGlow Mineral Sunscreen SPF 30”**。
-**细节**：展示该商品目前的 AI 准备度评分仅为 64 分，并指出其缺陷（如：页面未明确说明是否致痘、缺乏结构化的价格和物流信息、没有针对敏感肌的专门描述等）。
-
-### Scene 3：ChatGPT Commercial Readiness
-**展示**：
-* **Commercial intent map**: 命中高价值商业意图 “Best lightweight sunscreen under $30 for oily acne-prone skin”。
-* **Sponsored message preview**: 预览生成的赞助内容：“ClearGlow is a lightweight mineral SPF 30 sunscreen designed for oily-skin routines, with a non-greasy finish and daily-wear texture.”
-* **Ad-safe product summary**: 提炼出针对痘痘肌的安全性声明。
-* **Risk warning**: 提示风险：“Avoid claiming 'prevents acne' unless clinically supported.”
+### 第一幕：问题 (30 秒)
+**展示**：打开 AgentShelf Dashboard，选择一个商品 **"Sony WH-1000XM5 耳机"**。
+**细节**：展示该商品目前的 GEO Readiness 评分仅为 64 分，指出关键缺陷：
+* 缺少结构化的使用场景描述
+* 没有针对 "commuting" / "work from home" 等高价值意图的内容
+* 缺少竞品对比（vs AirPods Max、Bose QC Ultra）
+* 没有 JSON-LD 结构化数据
+* 缺少 FAQ
 
 **旁白**：
-> Since AI ads are emerging inside assistants, AgentShelf helps merchants prepare commercial-intent product content without confusing paid placement with organic answers.
+> 这是一个卖得很好的耳机，但在 AI 搜索中，当用户问 "best noise cancelling headphones for commuting" 时，它不会被推荐。为什么？因为 AI 理解不了它的核心卖点。
 
-*(注意：需强调 OpenAI 明确说广告不会影响自然回答，广告是独立、清晰标注的。)*
+### 第二幕：解决 (2 分钟)
+**展示**：点击 **"AI Commerce Ready"** 按钮，AgentShelf 自动执行以下操作：
 
-### Scene 4：Google AI Mode / Merchant Center Readiness
-**展示**：针对 **ClearGlow Sunscreen** 的数据修复
-* **Merchant Center feed patch**: 自动填补缺失的属性，例如 GTIN，并明确 `targetAudience: oily/acne-prone skin`。
-* **JSON-LD schema**: 为商品页生成符合 Google 规范的结构化数据代码块。
-* **Missing shipping / return policy**: 提示并补充确实的物流和 30 天退换货政策。
+**Step 1 - ChatGPT Commercial Readiness**:
+* 生成 Commercial Intent Map：命中 "best noise cancelling headphones under $200 for commuting"
+* 生成 Sponsored Message Preview
+* 生成 Ad-safe Product Summary
+* 标注 Risk Warning
+
+**Step 2 - Google AI Mode Readiness**:
+* 生成 Merchant Center Feed Patch（补齐 GTIN、品牌、品类等）
+* 生成 JSON-LD Product Schema
+* 补充 Shipping / Return Policy
+
+**Step 3 - GEO Fix**:
+* 优化商品标题
+* 生成结构化 FAQ
+* 生成竞品对比表
+* 优化商品描述
 
 **旁白**：
-> For Google AI Mode, product data quality matters. AgentShelf turns messy product pages into structured product feeds and schema-ready content.
+> AgentShelf 在 30 秒内完成了过去需要一个电商团队几天才能做的事：分析商品在 AI 渠道中的缺失信号，生成优化内容，并准备发布。
 
-### Scene 5：AI Commerce Launch Pack
-**展示**：
-* 一键生成针对 **ClearGlow Sunscreen** 的 cross-channel launch checklist（跨渠道发布任务清单）。
-* Mock publish：一键应用所有生成的优化内容（描述、FAQ、结构化数据等）。
-* 核心指标变化：ClearGlow 的 Score 从 **64** 提升到 **88**。
-* 状态变化：Channel status 从 **“Not Ready”** 变成 **“Pilot Ready”**。
+### 第三幕：效果 (30 秒)
+**展示**：Dashboard 右侧弹出 **SEO vs GEO Before/After 对比面板**：
+
+| 指标 | Before (SEO) | After (GEO) | 变化 |
+| --- | --- | --- | --- |
+| GEO Readiness Score | 64 | 88 | +37% |
+| AI 渠道覆盖 | Google only | ChatGPT + Google AI | 2x |
+| 预估月流量提升 | - | +45% | ↑ |
+| 预估转化率 | 2.1% | 5.2% | +147% |
+| Channel Status | Not Ready | Pilot Ready | ✓ |
+
+**旁白**：
+> 优化后，这个耳机在 ChatGPT 和 Google AI 搜索中都变得可推荐了。预估月流量提升 45%，转化率从 2.1% 提升到 5.2%。这就是 GEO 的力量。
 
 ## 8. 参考资料 (References)
 * [Advertise in ChatGPT | OpenAI Ads](https://ads.openai.com/?utm_source=chatgpt.com)
