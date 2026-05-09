@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  ReactNode,
+} from "react";
 import type { Category } from "@/lib/types";
 
 export interface MockUser {
@@ -56,25 +63,31 @@ export { MOCK_USERS };
 
 interface AuthContextValue {
   user: MockUser | null;
+  isHydrated: boolean;
   login: (userId: string) => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue>({
   user: null,
+  isHydrated: false,
   login: () => {},
   logout: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<MockUser | null>(() => {
-    if (typeof window === "undefined") return null;
+  const [user, setUser] = useState<MockUser | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
     const stored = sessionStorage.getItem("agentshelf-user");
+
     if (stored) {
-      return MOCK_USERS.find((u) => u.id === stored) || null;
+      setUser(MOCK_USERS.find((u) => u.id === stored) || null);
     }
-    return null;
-  });
+
+    setIsHydrated(true);
+  }, []);
 
   const login = useCallback((userId: string) => {
     const found = MOCK_USERS.find((u) => u.id === userId);
@@ -90,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, isHydrated, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
