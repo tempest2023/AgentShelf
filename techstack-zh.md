@@ -1,18 +1,18 @@
-## AgentShelf Tech Stack
+## AgentShelf 的技术组合
 
 **CopilotKit + Gemini + LangChain + MCP mock tools**
 
-### 1. CopilotKit: Frontend Core
+### 1. CopilotKit：前端核心
 
-Using CopilotKit for AgentShelf's interactive frontend:
+用 CopilotKit 做 AgentShelf 的交互式前端：
 
 * AI Chat / Copilot sidebar
-* Generating GEO Readiness Dashboard
-* Dynamically rendering Product Cards
-* User clicks on "Fix Description / Generate FAQ / Generate Schema"
-* Agent updates the UI based on user actions
+* 生成 GEO Readiness Dashboard
+* 动态渲染 Product Cards
+* 用户点击 “Fix Description / Generate FAQ / Generate Schema”
+* Agent 根据用户操作更新 UI
 
-#### Simple Integration Example
+#### 简单接入示例
 
 ```bash
 npm install @copilotkit/react-core @copilotkit/react-ui
@@ -33,17 +33,17 @@ export default function App() {
 }
 ```
 
-### 2. OpenAI API: Product Catalog Analysis
+### 2. OpenAI API 分析商品目录
 
-Using OpenAI API for core AI reasoning:
+用 OpenAI API 做核心 AI reasoning：
 
-* Reading Shopify product JSON
-* Evaluating whether products are easily recommended by AI
-* Identifying missing fields
-* Generating customer query intents
-* Generating optimized descriptions / FAQs / comparison tables
+* 读取 Shopify product JSON
+* 评估商品是否容易被 AI 推荐
+* 识别缺失字段
+* 生成 customer query intents
+* 生成优化后的 description / FAQ / comparison table
 
-#### Simple Integration Example
+#### 简单接入示例
 
 ```bash
 npm install openai dotenv
@@ -66,9 +66,9 @@ async function main() {
 main();
 ```
 
-### 3. LangChain: Workflow Orchestration
+### 3. LangChain：组织 workflow
 
-Using LangChain to manage the entire workflow:
+用 LangChain 管理整个流程：
 
 ```text
 Catalog Input
@@ -80,7 +80,7 @@ Catalog Input
 → UI State Update
 ```
 
-#### Simple Integration Example
+#### 简单接入示例
 
 ```bash
 npm install langchain @langchain/openai
@@ -98,9 +98,9 @@ const response = await model.invoke("Hello, how are you?");
 console.log(response.content);
 ```
 
-### 4. Manufact MCP: Agent-callable Commerce Tools
+### 4. Manufact MCP：做成可被 agent 调用的 commerce tools
 
-We can design several MCP-style tools:
+可以设计几个 MCP-style tools：
 
 ```text
 get_product_catalog()
@@ -111,9 +111,9 @@ simulate_ai_shopping_query(product, query)
 publish_shopify_patch(product_id, patch)
 ```
 
-#### Simple Integration Example
+#### 简单接入示例
 
-Quickly build an MCP Server using `@modelcontextprotocol/sdk`:
+使用 `@modelcontextprotocol/sdk` 快速构建 MCP Server：
 
 ```bash
 npm install @modelcontextprotocol/sdk zod
@@ -130,7 +130,7 @@ const server = new McpServer({
 
 server.registerTool(
   "get_product_catalog",
-  "Get product catalog",
+  "获取商品目录",
   {},
   async () => ({
     content: [{ type: "text", text: "Product JSON data..." }],
@@ -146,36 +146,36 @@ main().catch(console.error);
 
 ### 5. Daytona
 
-Daytona can be used to run secure batch audits:
+Daytona 可以用来跑安全的 batch audit：
 
-* Validating if JSON-LD schemas are legal
-* Batch checking the product catalog
-* Generating downloadable audit reports
+* 验证 JSON-LD schema 是否合法
+* 批量检查 product catalog
+* 生成 downloadable audit report
 
-#### Simple Integration Example
+#### 简单接入示例
 
-Install the CLI tool:
+安装 CLI 工具：
 
 ```bash
 brew install daytonaio/cli/daytona # macOS/Linux
-# OR
+# 或者
 powershell -Command "irm https://get.daytona.io/windows | iex" # Windows
 ```
 
-Basic workflow:
+基础工作流：
 
 ```bash
-# Login and authenticate
+# 登录认证
 daytona login
 
-# Initialize in the project directory
+# 在项目目录下初始化
 daytona init
 
-# Launch the sandbox environment
+# 启动沙箱环境
 daytona up
 ```
 
-## MVP Architecture
+## MVP 架构
 
 ```text
 React / Next.js frontend
@@ -194,6 +194,6 @@ MCP-style tools:
   - AI shopping preview simulator
 ```
 
-## Demo Script Highlights
+## Demo 里可以明确说
 
 > AgentShelf uses CopilotKit’s agentic frontend stack to turn AI analysis into interactive commerce UI, Gemini for product-readiness reasoning, LangChain for multi-step agent orchestration, and MCP-style tools for catalog auditing, schema generation, and Shopify patch simulation.
