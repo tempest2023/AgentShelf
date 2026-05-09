@@ -343,10 +343,10 @@ export default function LaunchTab({ product }: { product: Product }) {
           <div>
             <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
               <Send className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              {t("launch.mockPublish")}
+              {t("launch.publishToChannels")}
             </h3>
             <p className="text-xs text-zinc-500 mt-1">
-              {t("launch.mockPublishDesc")}
+              {t("launch.publishToChannelsDesc")}
             </p>
           </div>
           <button

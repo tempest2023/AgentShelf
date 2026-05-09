@@ -10,5 +10,10 @@ export const launchChecklist: LaunchChecklistItem[] = [
   { id: "lc-07", task: "Add comparison table", channel: "Perplexity / ChatGPT", status: "done" },
   { id: "lc-08", task: "Add shipping and return policy", channel: "Google / ChatGPT", status: "missing" },
   { id: "lc-09", task: "Simulate AI shopping query", channel: "All", status: "done" },
-  { id: "lc-10", task: "Mock publish changes", channel: "Shopify Mock", status: "done" },
+  {
+    id: "lc-10",
+    task: "Publish approved product updates",
+    channel: "Shopify / TikTok Shop / Amazon Shop / Stripe",
+    status: "needs-review",
+  },
 ];

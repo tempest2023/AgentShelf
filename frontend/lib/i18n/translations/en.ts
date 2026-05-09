@@ -33,6 +33,14 @@ export const en = {
     "Simulate how AI shopping engines would respond to a user query and whether this product would be recommended.",
   "geo.queryPlaceholder":
     'Try: "best noise cancelling headphones for commuting"',
+  "geo.queryPlaceholder.electronics":
+    'Try: "best noise cancelling headphones for commuting"',
+  "geo.queryPlaceholder.outdoor":
+    'Try: "waterproof hiking backpack for day trips"',
+  "geo.queryPlaceholder.pets":
+    'Try: "best dog leash for large dogs that pull"',
+  "geo.queryPlaceholder.health":
+    'Try: "omega 3 fish oil supplement benefits"',
   "geo.simulate": "Simulate",
   "geo.agentPreview": "AI AGENT PREVIEW ANSWER",
   "geo.productMatchResults": "Product Match Results",
@@ -104,12 +112,44 @@ export const en = {
   "launch.channel": "Channel",
   "launch.status": "Status",
   "launch.needsReview": "Needs Review",
-  "launch.mockPublish": "Mock Publish to Shopify",
-  "launch.mockPublishDesc":
-    "Simulate publishing all generated content to your Shopify store",
+  "launch.publishToChannels": "Publish to commerce channels",
+  "launch.publishToChannelsDesc":
+    "Review the final product page before publishing to Shopify, TikTok Shop, Amazon Shop, and Stripe.",
+  "launch.reviewAndPublish": "Review and Publish",
   "launch.publishNow": "Publish Now",
   "launch.publishing": "Publishing...",
   "launch.published": "Published",
+  "launch.previewTitle": "Preview before publishing",
+  "launch.previewDesc":
+    "Review your listing updates, structured assets, and destination channels before going live.",
+  "launch.currentListing": "Current listing",
+  "launch.readyListing": "Ready to publish",
+  "launch.readyToPublish": "Ready",
+  "launch.optimizedTitle": "Optimized title",
+  "launch.optimizedDescription": "Optimized description",
+  "launch.keyDetails": "Key details",
+  "launch.audience": "Audience",
+  "launch.shippingPolicy": "Shipping policy",
+  "launch.returnPolicy": "Return policy",
+  "launch.assetsIncluded": "Assets included in this launch",
+  "launch.faqIncluded": "Structured FAQ",
+  "launch.schemaIncluded": "JSON-LD schema",
+  "launch.comparisonIncluded": "Comparison highlights",
+  "launch.publishChannels": "Publish channels",
+  "launch.channelsReady": "4 channels ready",
+  "launch.channelsLive": "4 channels are live",
+  "launch.ready": "Ready",
+  "launch.live": "Live",
+  "launch.publishAction": "Publish to 4 channels",
+  "launch.publishingTitle": "Publishing product updates",
+  "launch.publishingDesc":
+    "Syncing your updated listing, FAQ, and structured data to every connected channel.",
+  "launch.successTitle": "Published successfully",
+  "launch.successDesc":
+    "Your updated product package is now live across the selected commerce channels.",
+  "launch.liveStatus": "Live status",
+  "launch.publishedPackage": "Published package",
+  "launch.close": "Close",
   // Login
   "login.title": "Sign in to AgentShelf",
   "login.subtitle": "Choose an account to explore its store dashboard",

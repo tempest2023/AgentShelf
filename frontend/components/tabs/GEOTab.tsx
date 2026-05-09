@@ -32,7 +32,7 @@ export default function GEOTab({ product }: { product: Product }) {
 
   const handleSimulate = () => {
     if (!query.trim()) return;
-    setSimulation(simulateQuery(query));
+    setSimulation(simulateQuery(query, product.category));
   };
 
   return (
@@ -146,7 +146,7 @@ export default function GEOTab({ product }: { product: Product }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSimulate()}
-              placeholder={t("geo.queryPlaceholder")}
+              placeholder={t(`geo.queryPlaceholder.${product.category}` as TranslationKey)}
               className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg text-sm text-zinc-900 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-colors"
             />
           </div>

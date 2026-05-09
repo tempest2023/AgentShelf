@@ -35,6 +35,14 @@ export const zh: Record<TranslationKey, string> = {
     "模拟 AI 购物引擎如何响应用户查询，以及该商品是否会被推荐。",
   "geo.queryPlaceholder":
     '试试: "适合通勤的降噪耳机"',
+  "geo.queryPlaceholder.electronics":
+    '试试: "适合通勤的降噪耳机"',
+  "geo.queryPlaceholder.outdoor":
+    '试试: "防水徒步背包 适合一日游"',
+  "geo.queryPlaceholder.pets":
+    '试试: "大型犬牵引绳 防暴冲"',
+  "geo.queryPlaceholder.health":
+    '试试: "深海鱼油 omega 3 功效"',
   "geo.simulate": "模拟",
   "geo.agentPreview": "AI 代理预览回答",
   "geo.productMatchResults": "商品匹配结果",
@@ -103,11 +111,43 @@ export const zh: Record<TranslationKey, string> = {
   "launch.channel": "渠道",
   "launch.status": "状态",
   "launch.needsReview": "待审核",
-  "launch.mockPublish": "模拟发布到 Shopify",
-  "launch.mockPublishDesc": "模拟将所有生成的内容发布到您的 Shopify 商店",
+  "launch.publishToChannels": "发布到商业渠道",
+  "launch.publishToChannelsDesc":
+    "先预览最终商品页，再发布到 Shopify、TikTok Shop、Amazon Shop 和 Stripe。",
+  "launch.reviewAndPublish": "预览并发布",
   "launch.publishNow": "立即发布",
   "launch.publishing": "发布中...",
   "launch.published": "已发布",
+  "launch.previewTitle": "发布前预览",
+  "launch.previewDesc": "确认商品页更新、结构化资产和目标渠道后再正式发布。",
+  "launch.currentListing": "当前商品页",
+  "launch.readyListing": "待发布商品页",
+  "launch.readyToPublish": "准备发布",
+  "launch.optimizedTitle": "优化后标题",
+  "launch.optimizedDescription": "优化后描述",
+  "launch.keyDetails": "关键细节",
+  "launch.audience": "适用人群",
+  "launch.shippingPolicy": "配送政策",
+  "launch.returnPolicy": "退货政策",
+  "launch.assetsIncluded": "本次将一同上线的资产",
+  "launch.faqIncluded": "结构化 FAQ",
+  "launch.schemaIncluded": "JSON-LD Schema",
+  "launch.comparisonIncluded": "对比亮点",
+  "launch.publishChannels": "发布渠道",
+  "launch.channelsReady": "4 个渠道已就绪",
+  "launch.channelsLive": "4 个渠道已上线",
+  "launch.ready": "就绪",
+  "launch.live": "已上线",
+  "launch.publishAction": "发布到 4 个渠道",
+  "launch.publishingTitle": "正在发布商品更新",
+  "launch.publishingDesc":
+    "正在把更新后的商品页、FAQ 和结构化数据同步到所有已连接渠道。",
+  "launch.successTitle": "发布成功",
+  "launch.successDesc":
+    "更新后的商品内容已经同步到所选商业渠道，可以继续查看上线结果。",
+  "launch.liveStatus": "上线状态",
+  "launch.publishedPackage": "已发布内容",
+  "launch.close": "关闭",
 
   // Login
   "login.title": "登录 AgentShelf",
