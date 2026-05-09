@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { getChatgptPack, getGoogleChecklist } from "@/lib/mock";
+import { useLanguage } from "@/lib/i18n/context";
 import Card, { CardHeader, CardTitle } from "@/components/Card";
 import Badge from "@/components/Badge";
 import ScoreRing from "@/components/ScoreRing";
@@ -23,6 +24,7 @@ export default function ChannelsTab({ product }: { product: Product }) {
   const chatgptPack = getChatgptPack(product.id);
   const googleChecklist = getGoogleChecklist(product.id);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const { t } = useLanguage();
 
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
@@ -34,10 +36,10 @@ export default function ChannelsTab({ product }: { product: Product }) {
     <div className="space-y-6 animate-fade-in-up">
       <div>
         <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-          AI Commerce Channels
+          {t("channels.title")}
         </h1>
         <p className="text-sm text-zinc-500 mt-1">
-          Channel readiness for{" "}
+          {t("channels.subtitle")}{" "}
           <span className="text-zinc-700 dark:text-zinc-300 font-medium">{product.title}</span>
         </p>
       </div>
@@ -50,13 +52,13 @@ export default function ChannelsTab({ product }: { product: Product }) {
               <MessageSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <CardTitle>ChatGPT Commercial Readiness</CardTitle>
+              <CardTitle>{t("channels.chatgpt.title")}</CardTitle>
               <p className="text-xs text-zinc-500 mt-0.5">
-                OpenAI Ads pilot-ready analysis
+                {t("channels.chatgpt.subtitle")}
               </p>
             </div>
           </div>
-          <Badge variant="success">Active</Badge>
+          <Badge variant="success">{t("channels.chatgpt.active")}</Badge>
         </CardHeader>
 
         <div className="space-y-5">
@@ -64,7 +66,7 @@ export default function ChannelsTab({ product }: { product: Product }) {
           <div>
             <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <Target className="w-3 h-3" />
-              Commercial Intent Map
+              {t("channels.chatgpt.intentMap")}
             </h4>
             <div className="flex flex-wrap gap-2">
               {chatgptPack.primaryIntents.map((intent, i) => (
@@ -82,7 +84,7 @@ export default function ChannelsTab({ product }: { product: Product }) {
           <div>
             <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <Sparkles className="w-3 h-3" />
-              Recommended Sponsored Message
+              {t("channels.chatgpt.sponsoredMsg")}
             </h4>
             <div className="relative px-4 py-3 bg-emerald-50 dark:bg-emerald-500/5 border border-emerald-200 dark:border-emerald-500/20 rounded-lg">
               <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed pr-8">
@@ -107,7 +109,7 @@ export default function ChannelsTab({ product }: { product: Product }) {
           <div>
             <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <Shield className="w-3 h-3" />
-              Ad-safe Product Summary
+              {t("channels.chatgpt.adSafe")}
             </h4>
             <div className="px-4 py-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-lg">
               <p className="text-sm text-zinc-700 dark:text-zinc-300">{chatgptPack.adSafeSummary}</p>
@@ -118,7 +120,7 @@ export default function ChannelsTab({ product }: { product: Product }) {
           <div>
             <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
               <AlertTriangle className="w-3 h-3 text-amber-500" />
-              Risk Warnings
+              {t("channels.chatgpt.riskWarnings")}
             </h4>
             <div className="space-y-1.5">
               {chatgptPack.riskWarnings.map((warning, i) => (
@@ -136,7 +138,7 @@ export default function ChannelsTab({ product }: { product: Product }) {
           {/* Comparison Claims */}
           <div>
             <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
-              Comparison Claims
+              {t("channels.chatgpt.comparisonClaims")}
             </h4>
             <div className="space-y-2">
               {chatgptPack.comparisonClaims.map((claim, i) => (
@@ -156,7 +158,7 @@ export default function ChannelsTab({ product }: { product: Product }) {
           {/* Required Fixes */}
           <div>
             <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
-              Required Fixes
+              {t("channels.chatgpt.requiredFixes")}
             </h4>
             <div className="space-y-1.5">
               {chatgptPack.requiredFixes.map((fix, i) => (
@@ -198,9 +200,9 @@ export default function ChannelsTab({ product }: { product: Product }) {
               </svg>
             </div>
             <div>
-              <CardTitle>Google AI Mode / Merchant Center</CardTitle>
+              <CardTitle>{t("channels.google.title")}</CardTitle>
               <p className="text-xs text-zinc-500 mt-0.5">
-                Merchant Center readiness check
+                {t("channels.google.subtitle")}
               </p>
             </div>
           </div>
@@ -213,7 +215,7 @@ export default function ChannelsTab({ product }: { product: Product }) {
           {/* Checklist Items */}
           <div>
             <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">
-              Readiness Checklist
+              {t("channels.google.checklist")}
             </h4>
             <div className="space-y-1.5">
               {googleChecklist.items.map((item, i) => (
@@ -244,7 +246,7 @@ export default function ChannelsTab({ product }: { product: Product }) {
           {/* Feed Patch */}
           <div>
             <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-2">
-              Merchant Center Feed Patch
+              {t("channels.google.feedPatch")}
             </h4>
             <div className="relative bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-300 dark:border-zinc-700 rounded-lg overflow-hidden">
               <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-300 dark:border-zinc-700">
@@ -282,18 +284,18 @@ export default function ChannelsTab({ product }: { product: Product }) {
       {/* Coming Soon Channels */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <ComingSoonCard
-          name="Perplexity"
-          description="Answer engine visibility and GEO readiness preview"
+          name={t("channels.perplexity.name")}
+          description={t("channels.perplexity.desc")}
           color="blue"
         />
         <ComingSoonCard
-          name="Claude"
-          description="Anthropic's AI assistant commerce integration"
+          name={t("channels.claude.name")}
+          description={t("channels.claude.desc")}
           color="purple"
         />
         <ComingSoonCard
-          name="Gemini"
-          description="Google's multimodal AI commerce channel"
+          name={t("channels.gemini.name")}
+          description={t("channels.gemini.desc")}
           color="amber"
         />
       </div>
@@ -310,6 +312,7 @@ function ComingSoonCard({
   description: string;
   color: "blue" | "purple" | "amber";
 }) {
+  const { t } = useLanguage();
   const colorClasses = {
     blue: "from-blue-500/10 to-blue-600/5 border-blue-200 dark:border-blue-500/20",
     purple: "from-purple-500/10 to-purple-600/5 border-purple-200 dark:border-purple-500/20",
@@ -335,7 +338,7 @@ function ComingSoonCard({
       <p className="text-xs text-zinc-500 mb-4">{description}</p>
       <div className="flex items-center gap-1.5 text-xs text-zinc-400">
         <span className="px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-300 dark:border-zinc-700">
-          Coming Soon
+          {t("channels.comingSoon")}
         </span>
       </div>
       <div

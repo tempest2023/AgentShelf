@@ -10,7 +10,9 @@ import {
   Package,
 } from "lucide-react";
 import { products } from "@/lib/mock";
+import { useLanguage } from "@/lib/i18n/context";
 import type { Category, Product } from "@/lib/types";
+import type { TranslationKey } from "@/lib/i18n/translations";
 
 const categoryIcons: Record<Category, React.ReactNode> = {
   electronics: <Laptop className="w-4 h-4" />,
@@ -19,11 +21,11 @@ const categoryIcons: Record<Category, React.ReactNode> = {
   health: <Heart className="w-4 h-4" />,
 };
 
-const categoryLabels: Record<Category, string> = {
-  electronics: "Electronics",
-  outdoor: "Outdoor & Sports",
-  pets: "Pet Supplies",
-  health: "Health & Supplements",
+const categoryKeys: Record<Category, TranslationKey> = {
+  electronics: "sidebar.category.electronics",
+  outdoor: "sidebar.category.outdoor",
+  pets: "sidebar.category.pets",
+  health: "sidebar.category.health",
 };
 
 interface SidebarProps {
@@ -40,10 +42,12 @@ export default function Sidebar({
   );
   const [expanded, setExpanded] = useState(true);
 
+  const { t } = useLanguage();
+
   const filteredProducts = products.filter(
     (p) => p.category === activeCategory
   );
-  const categories = Object.keys(categoryLabels) as Category[];
+  const categories = Object.keys(categoryKeys) as Category[];
 
   return (
     <aside
@@ -60,7 +64,7 @@ export default function Sidebar({
           {expanded && (
             <>
               <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider flex-1">
-                Product Catalog
+                {t("sidebar.catalog")}
               </span>
               <ChevronDown
                 className={`w-3.5 h-3.5 text-zinc-500 transition-transform ${
@@ -87,7 +91,7 @@ export default function Sidebar({
                   }`}
                 >
                   {categoryIcons[cat]}
-                  {categoryLabels[cat]}
+                  {t(categoryKeys[cat])}
                 </button>
               ))}
             </div>
