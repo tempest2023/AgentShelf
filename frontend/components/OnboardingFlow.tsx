@@ -3,10 +3,6 @@
 import { useState, useEffect } from "react";
 import {
   Store,
-  ShoppingBag,
-  CreditCard,
-  Music,
-  Package,
   Link,
   Download,
   RefreshCw,
@@ -22,80 +18,40 @@ import { useLanguage } from "@/lib/i18n/context";
 import { useAuth } from "@/lib/auth/context";
 import { products } from "@/lib/mock";
 import type { TranslationKey } from "@/lib/i18n/translations";
+import {
+  CommerceChannelBadge,
+  commerceChannelBrandStyles,
+  type CommerceChannelId,
+} from "@/components/CommerceChannelIcon";
 
-type Platform = "shopify" | "stripe" | "tiktok" | "amazon";
+type Platform = CommerceChannelId;
 
 interface PlatformConfig {
   id: Platform;
-  name: string;
   nameKey: TranslationKey;
   descKey: TranslationKey;
-  icon: React.ReactNode;
-  color: {
-    bg: string;
-    border: string;
-    hover: string;
-    text: string;
-    accent: string;
-  };
 }
 
 const platforms: PlatformConfig[] = [
   {
     id: "shopify",
-    name: "Shopify",
     nameKey: "onboarding.shopify",
     descKey: "onboarding.shopifyDesc",
-    icon: <ShoppingBag className="w-6 h-6" />,
-    color: {
-      bg: "bg-emerald-50 dark:bg-emerald-950/30",
-      border: "border-emerald-200 dark:border-emerald-800",
-      hover: "hover:border-emerald-400 dark:hover:border-emerald-600 hover:shadow-emerald-100 dark:hover:shadow-emerald-900/20",
-      text: "text-emerald-600 dark:text-emerald-400",
-      accent: "bg-emerald-500",
-    },
   },
   {
     id: "stripe",
-    name: "Stripe",
     nameKey: "onboarding.stripe",
     descKey: "onboarding.stripeDesc",
-    icon: <CreditCard className="w-6 h-6" />,
-    color: {
-      bg: "bg-violet-50 dark:bg-violet-950/30",
-      border: "border-violet-200 dark:border-violet-800",
-      hover: "hover:border-violet-400 dark:hover:border-violet-600 hover:shadow-violet-100 dark:hover:shadow-violet-900/20",
-      text: "text-violet-600 dark:text-violet-400",
-      accent: "bg-violet-500",
-    },
   },
   {
     id: "tiktok",
-    name: "TikTok Shop",
     nameKey: "onboarding.tiktok",
     descKey: "onboarding.tiktokDesc",
-    icon: <Music className="w-6 h-6" />,
-    color: {
-      bg: "bg-pink-50 dark:bg-pink-950/30",
-      border: "border-pink-200 dark:border-pink-800",
-      hover: "hover:border-pink-400 dark:hover:border-pink-600 hover:shadow-pink-100 dark:hover:shadow-pink-900/20",
-      text: "text-pink-600 dark:text-pink-400",
-      accent: "bg-pink-500",
-    },
   },
   {
     id: "amazon",
-    name: "Amazon",
     nameKey: "onboarding.amazon",
     descKey: "onboarding.amazonDesc",
-    icon: <Package className="w-6 h-6" />,
-    color: {
-      bg: "bg-amber-50 dark:bg-amber-950/30",
-      border: "border-amber-200 dark:border-amber-800",
-      hover: "hover:border-amber-400 dark:hover:border-amber-600 hover:shadow-amber-100 dark:hover:shadow-amber-900/20",
-      text: "text-amber-600 dark:text-amber-400",
-      accent: "bg-amber-500",
-    },
   },
 ];
 
@@ -119,14 +75,11 @@ interface OnboardingFlowProps {
 export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const { user } = useAuth();
   const { t, locale, setLocale } = useLanguage();
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
   const [phase, setPhase] = useState<"select" | "importing" | "complete">("select");
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformConfig | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [stepProgress, setStepProgress] = useState(0);
-
-  useEffect(() => setMounted(true), []);
 
   const productCount = user
     ? products.filter((p) => p.category === user.category).length
@@ -145,8 +98,6 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     const step = importSteps[currentStep];
     if (!step) return;
 
-    setStepProgress(0);
-
     const progressInterval = setInterval(() => {
       setStepProgress((prev) => {
         if (prev >= 100) return 100;
@@ -159,7 +110,10 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       setStepProgress(100);
 
       if (currentStep < importSteps.length - 1) {
-        setTimeout(() => setCurrentStep((s) => s + 1), 300);
+        setTimeout(() => {
+          setStepProgress(0);
+          setCurrentStep((s) => s + 1);
+        }, 300);
       } else {
         setTimeout(() => setPhase("complete"), 500);
       }
@@ -190,10 +144,13 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           {locale === "en" ? "中文" : "EN"}
         </button>
         <button
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          onClick={() =>
+            setTheme(resolvedTheme === "dark" ? "light" : "dark")
+          }
           className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500"
         >
-          {mounted && theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          <Sun className="hidden w-4 h-4 dark:block" />
+          <Moon className="w-4 h-4 dark:hidden" />
         </button>
       </div>
 
@@ -270,11 +227,23 @@ function PlatformSelection({
           <button
             key={platform.id}
             onClick={() => onSelect(platform)}
-            className={`group relative text-left p-5 rounded-xl border transition-all duration-200 shadow-sm hover:shadow-md ${platform.color.bg} ${platform.color.border} ${platform.color.hover}`}
+            className={`group relative text-left p-5 rounded-xl border transition-all duration-200 shadow-sm hover:shadow-md ${
+              commerceChannelBrandStyles[platform.id].cardBgClass
+            } ${commerceChannelBrandStyles[platform.id].cardBorderClass} ${
+              commerceChannelBrandStyles[platform.id].cardHoverClass
+            }`}
           >
             <div className="flex items-start gap-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${platform.color.text} bg-white dark:bg-zinc-800 border ${platform.color.border}`}>
-                {platform.icon}
+              <div
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border bg-white shadow-sm dark:bg-zinc-900 ${
+                  commerceChannelBrandStyles[platform.id].cardBorderClass
+                }`}
+              >
+                <CommerceChannelBadge
+                  channelId={platform.id}
+                  className="h-9 w-9"
+                  iconClassName="h-5 w-5"
+                />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-zinc-800 dark:text-zinc-200 text-sm mb-1">
@@ -287,7 +256,11 @@ function PlatformSelection({
             </div>
 
             <div className="absolute top-1/2 -translate-y-1/2 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <ArrowRight className={`w-5 h-5 ${platform.color.text}`} />
+              <ArrowRight
+                className={`w-5 h-5 ${
+                  commerceChannelBrandStyles[platform.id].cardTextClass
+                }`}
+              />
             </div>
           </button>
         ))}
@@ -319,21 +292,31 @@ function ImportAnimation({
   stepProgress: number;
   t: (key: TranslationKey) => string;
 }) {
-  const overallProgress = ((currentStep * 100 + stepProgress) / (steps.length * 100)) * 100;
+  const overallProgress =
+    ((currentStep * 100 + stepProgress) / (steps.length * 100)) * 100;
+  const brandStyles = commerceChannelBrandStyles[platform.id];
 
   return (
     <div className="w-full max-w-md animate-fade-in-up">
       <div className="text-center mb-8">
         {/* Platform icon with pulse */}
         <div className="relative inline-flex items-center justify-center mb-6">
-          <div className={`absolute inset-0 rounded-2xl ${platform.color.accent} opacity-20 import-pulse`} />
-          <div className={`relative w-16 h-16 rounded-2xl flex items-center justify-center ${platform.color.text} bg-white dark:bg-zinc-800 border ${platform.color.border}`}>
-            {platform.icon}
+          <div
+            className={`absolute inset-0 rounded-2xl ${brandStyles.accentClass} opacity-20 import-pulse`}
+          />
+          <div
+            className={`relative flex h-16 w-16 items-center justify-center rounded-2xl border bg-white dark:bg-zinc-900 ${brandStyles.cardBorderClass}`}
+          >
+            <CommerceChannelBadge
+              channelId={platform.id}
+              className="h-12 w-12"
+              iconClassName="h-7 w-7"
+            />
           </div>
         </div>
 
         <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 mb-1">
-          {t("import.importing")} {platform.name}
+          {t("import.importing")} {t(platform.nameKey)}
         </h2>
         <p className="text-sm text-zinc-500">
           {t((steps[currentStep] || steps[0]).labelKey)}...
@@ -344,7 +327,7 @@ function ImportAnimation({
       <div className="mb-8">
         <div className="h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all duration-300 ease-out ${platform.color.accent}`}
+            className={`h-full rounded-full transition-all duration-300 ease-out ${brandStyles.accentClass}`}
             style={{ width: `${overallProgress}%` }}
           />
         </div>
@@ -373,7 +356,15 @@ function ImportAnimation({
                   : "opacity-40"
               }`}
             >
-              <div className={`flex-shrink-0 ${isActive ? platform.color.text : isDone ? "text-emerald-500" : "text-zinc-400"}`}>
+              <div
+                className={`flex-shrink-0 ${
+                  isActive
+                    ? brandStyles.cardTextClass
+                    : isDone
+                    ? "text-emerald-500"
+                    : "text-zinc-400"
+                }`}
+              >
                 {isDone ? (
                   <CheckCircle2 className="w-5 h-5" />
                 ) : isActive ? (
@@ -388,7 +379,7 @@ function ImportAnimation({
               {isActive && (
                 <div className="w-16 h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-100 ${platform.color.accent}`}
+                    className={`h-full rounded-full transition-all duration-100 ${brandStyles.accentClass}`}
                     style={{ width: `${stepProgress}%` }}
                   />
                 </div>
@@ -441,8 +432,16 @@ function ImportComplete({
             className="import-slide flex items-center gap-3 p-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-lg"
             style={{ animationDelay: `${i * 0.1}s` }}
           >
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${platform.color.text} bg-white dark:bg-zinc-800 border ${platform.color.border}`}>
-              {platform.icon}
+            <div
+              className={`flex h-8 w-8 items-center justify-center rounded-lg border bg-white dark:bg-zinc-900 ${
+                commerceChannelBrandStyles[platform.id].cardBorderClass
+              }`}
+            >
+              <CommerceChannelBadge
+                channelId={platform.id}
+                className="h-6 w-6"
+                iconClassName="h-3.5 w-3.5"
+              />
             </div>
             <div className="flex-1 h-3 bg-zinc-200 dark:bg-zinc-700 rounded" />
             <div className="w-16 h-3 bg-zinc-200 dark:bg-zinc-700 rounded" />

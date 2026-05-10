@@ -83,32 +83,32 @@ export default function GeoAgentPanel({
         ? [
             {
               title: "看当前商品",
-              message: "请展示当前商品的 GEO readiness 图表，并告诉我最弱的分项是什么。",
+              message: "展示当前商品的 GEO readiness 图表，并指出最弱分项。",
             },
             {
               title: "比较类目分数",
-              message: "比较电子产品和户外运动类目的 discoverability 分数，并生成对比图。",
+              message: "比较电子产品和户外运动类目的 discoverability，并生成对比图。",
             },
             {
               title: "看流量提升",
-              message: "健康品类在 GEO 优化后预计流量提升多少？请用图表展示。",
+              message: "用图表展示健康品类在 GEO 优化后的预计流量提升。",
             },
           ]
         : [
             {
               title: "Current product",
               message:
-                "Show the GEO readiness chart for the current product and point out the weakest dimension.",
+                "Show the GEO readiness chart for the current product and identify the weakest dimension.",
             },
             {
               title: "Compare categories",
               message:
-                "Compare discoverability across Electronics and Outdoor & Sports, then generate a chart.",
+                "Compare discoverability across Electronics and Outdoor & Sports in a chart.",
             },
             {
               title: "Traffic uplift",
               message:
-                "How much traffic uplift should Health & Supplements expect after GEO optimization? Show it as a chart.",
+                "Chart the expected traffic uplift for Health & Supplements after GEO optimization.",
             },
           ],
     [locale]
@@ -196,14 +196,14 @@ export default function GeoAgentPanel({
         </div>
 
         <div className="px-5 pt-3">
-          <div className="grid gap-2 sm:grid-cols-3">
+          <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1">
             {suggestions.map((suggestion) => (
               <button
                 key={suggestion.title}
                 type="button"
                 disabled={isSubmittingStarter}
                 onClick={() => handleStarterPrompt(suggestion.message)}
-                className="rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-left transition-colors hover:border-blue-300 hover:bg-blue-50/60 disabled:cursor-wait disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10"
+                className="flex min-h-[168px] w-[220px] shrink-0 snap-start flex-col rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-left transition-colors hover:border-blue-300 hover:bg-blue-50/60 disabled:cursor-wait disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10"
               >
                 <div className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400 dark:text-zinc-500">
                   {locale === "zh" ? "示例问题" : "Starter"}

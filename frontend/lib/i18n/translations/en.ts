@@ -7,6 +7,7 @@ export const en = {
 
   // Sidebar
   "sidebar.catalog": "Product Catalog",
+  "sidebar.settings": "Settings",
   "sidebar.category.electronics": "Electronics",
   "sidebar.category.outdoor": "Outdoor & Sports",
   "sidebar.category.pets": "Pet Supplies",
@@ -59,6 +60,8 @@ export const en = {
   "geo.fixType.faq": "FAQ Generation",
   "geo.fixType.comparison": "Comparison Table",
   "geo.fixType.schema": "JSON-LD Schema",
+  "geo.loading": "Analyzing...",
+  "geo.apiError": "Using local fallback",
 
   // Channels Tab
   "channels.title": "AI Commerce Channels",
@@ -176,6 +179,12 @@ export const en = {
   "header.logout": "Sign Out",
   "header.importData": "Import Data",
 
+  // Logout Confirm
+  "logoutConfirm.title": "Sign Out",
+  "logoutConfirm.message": "Are you sure you want to sign out?",
+  "logoutConfirm.cancel": "Cancel",
+  "logoutConfirm.confirm": "Sign Out",
+
   // Onboarding
   "onboarding.title": "Import Your Store Data",
   "onboarding.subtitle": "Connect your e-commerce platform to get started with AI-powered product optimization",
@@ -199,6 +208,11 @@ export const en = {
   "import.productsImported": "products imported successfully",
   "import.continue": "Continue to Dashboard",
   "import.importing": "Importing from",
+
+  // Settings
+  "settings.subtitle": "Manage your store data and preferences",
+  "settings.dataManagement": "Data Management",
+  "settings.dataManagementDesc": "Import product data from your connected e-commerce platforms.",
 
   // Import Modal
   "importModal.title": "Import New Data",

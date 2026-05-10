@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Search,
   AlertTriangle,
@@ -14,7 +14,7 @@ import {
   ArrowRight,
   MessageSquare,
 } from "lucide-react";
-import type { Product, QuerySimulation, GeoFix } from "@/lib/types";
+import type { Product, ProductAudit, QuerySimulation, GeoFix } from "@/lib/types";
 import { getAuditForProduct, simulateQuery } from "@/lib/mock";
 import { useLanguage } from "@/lib/i18n/context";
 import type { TranslationKey } from "@/lib/i18n/translations";
@@ -55,15 +55,57 @@ export default function GEOTab({ product }: { product: Product }) {
   const [query, setQuery] = useState("");
   const [simulation, setSimulation] = useState<QuerySimulation | null>(null);
   const [expandedFix, setExpandedFix] = useState<number | null>(null);
+  const [audit, setAudit] = useState<ProductAudit>(() => getAuditForProduct(product.id));
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [simulating, setSimulating] = useState(false);
   const { t } = useLanguage();
 
-  const audit = getAuditForProduct(product.id);
+  const fetchAudit = useCallback(async (p: Product) => {
+    setAuditLoading(true);
+    try {
+      const res = await fetch("/api/geo/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product: p }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAudit(data);
+      }
+    } catch {
+      // fallback already set
+    } finally {
+      setAuditLoading(false);
+    }
+  }, []);
 
-  const handleSimulate = (q?: string) => {
+  useEffect(() => {
+    setAudit(getAuditForProduct(product.id));
+    fetchAudit(product);
+  }, [product.id, fetchAudit]);
+
+  const handleSimulate = async (q?: string) => {
     const queryText = q ?? query;
     if (!queryText.trim()) return;
     setQuery(queryText);
+    setSimulating(true);
+    try {
+      const res = await fetch("/api/geo/simulate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: queryText, product }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSimulation(data);
+        setSimulating(false);
+        return;
+      }
+    } catch {
+      // fall through to mock
+    }
     setSimulation(simulateQuery(queryText, product.category));
+    setSimulating(false);
   };
 
   const suggestions = suggestedQueries[product.category] ?? suggestedQueries.electronics;
@@ -84,7 +126,12 @@ export default function GEOTab({ product }: { product: Product }) {
         <div className="min-w-0 space-y-6">
           {/* Score overview */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="md:col-span-1 flex flex-col items-center justify-center py-6">
+            <Card className="md:col-span-1 flex flex-col items-center justify-center py-6 relative">
+              {auditLoading && (
+                <div className="absolute top-2 right-2">
+                  <span className="w-3 h-3 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin inline-block" />
+                </div>
+              )}
               <ScoreRing score={audit.aiReadinessScore} size={140} strokeWidth={10} />
               <span className="text-xs text-zinc-500 mt-3 font-medium uppercase tracking-wider">
                 {t("geo.aiReadiness")}
@@ -187,10 +234,15 @@ export default function GEOTab({ product }: { product: Product }) {
               </div>
               <button
                 onClick={() => handleSimulate()}
-                className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-500 sm:self-auto"
+                disabled={simulating}
+                className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-60 disabled:cursor-wait sm:self-auto"
               >
-                <Sparkles className="w-4 h-4" />
-                {t("geo.simulate")}
+                {simulating ? (
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4" />
+                )}
+                {simulating ? t("geo.loading") : t("geo.simulate")}
               </button>
             </div>
 

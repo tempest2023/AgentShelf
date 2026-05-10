@@ -19,20 +19,24 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import type { Product } from "@/lib/types";
+import type { LaunchChecklistItem, Product } from "@/lib/types";
 import {
   getComparison,
   getAuditForProduct,
   launchChecklist,
 } from "@/lib/mock";
-import { useLanguage } from "@/lib/i18n/context";
+import { useLanguage, type Locale } from "@/lib/i18n/context";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import Card, { CardHeader, CardTitle } from "@/components/Card";
 import Badge from "@/components/Badge";
+import CommerceChannelIcon, {
+  commerceChannelBrandStyles,
+  type CommerceChannelId,
+} from "@/components/CommerceChannelIcon";
 
 type PublishState = "idle" | "publishing" | "done";
 type PublishModalPhase = "preview" | "publishing" | "success" | null;
-type PublishChannelId = "shopify" | "tiktok" | "amazon" | "stripe";
+type PublishChannelId = CommerceChannelId;
 
 interface PublishChannel {
   id: PublishChannelId;
@@ -45,30 +49,26 @@ const PUBLISH_CHANNELS: PublishChannel[] = [
   {
     id: "shopify",
     name: "Shopify",
-    iconWrapperClass:
-      "bg-[#95BF47]/15 text-[#5F8F3F] dark:bg-[#95BF47]/20 dark:text-[#B7DA84]",
-    borderClass: "border-[#95BF47]/30 dark:border-[#95BF47]/25",
+    iconWrapperClass: commerceChannelBrandStyles.shopify.iconWrapperClass,
+    borderClass: commerceChannelBrandStyles.shopify.pillBorderClass,
   },
   {
     id: "tiktok",
     name: "TikTok Shop",
-    iconWrapperClass:
-      "bg-zinc-950 text-white dark:bg-zinc-50 dark:text-zinc-950",
-    borderClass: "border-zinc-300 dark:border-zinc-700",
+    iconWrapperClass: commerceChannelBrandStyles.tiktok.iconWrapperClass,
+    borderClass: commerceChannelBrandStyles.tiktok.pillBorderClass,
   },
   {
     id: "amazon",
     name: "Amazon Shop",
-    iconWrapperClass:
-      "bg-[#FF9900]/15 text-[#B96800] dark:bg-[#FF9900]/20 dark:text-[#FFC563]",
-    borderClass: "border-[#FF9900]/30 dark:border-[#FF9900]/25",
+    iconWrapperClass: commerceChannelBrandStyles.amazon.iconWrapperClass,
+    borderClass: commerceChannelBrandStyles.amazon.pillBorderClass,
   },
   {
     id: "stripe",
     name: "Stripe",
-    iconWrapperClass:
-      "bg-[#635BFF]/15 text-[#635BFF] dark:bg-[#635BFF]/20 dark:text-[#A39FFF]",
-    borderClass: "border-[#635BFF]/25 dark:border-[#635BFF]/20",
+    iconWrapperClass: commerceChannelBrandStyles.stripe.iconWrapperClass,
+    borderClass: commerceChannelBrandStyles.stripe.pillBorderClass,
   },
 ];
 
@@ -88,8 +88,14 @@ export default function LaunchTab({
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [publishModalPhase, setPublishModalPhase] =
     useState<PublishModalPhase>(null);
+  const [selectedChannelIds, setSelectedChannelIds] = useState<
+    PublishChannelId[]
+  >(() => PUBLISH_CHANNELS.map((channel) => channel.id));
+  const [publishedChannelIds, setPublishedChannelIds] = useState<
+    PublishChannelId[]
+  >(() => PUBLISH_CHANNELS.map((channel) => channel.id));
   const publishTimerRef = useRef<number | null>(null);
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
 
   const schemaFix = audit.recommendedFixes.find((fix) => fix.type === "schema");
   const faqFix = audit.recommendedFixes.find((fix) => fix.type === "faq");
@@ -105,9 +111,15 @@ export default function LaunchTab({
   const previewDescription =
     descriptionFix?.suggestedValue ?? product.description;
   const faqItems = faqFix ? parseFaq(faqFix.suggestedValue) : [];
-  const checklistItems = launchChecklist.map((item) =>
+  const selectedChannels = PUBLISH_CHANNELS.filter((channel) =>
+    selectedChannelIds.includes(channel.id)
+  );
+  const publishedChannels = PUBLISH_CHANNELS.filter((channel) =>
+    publishedChannelIds.includes(channel.id)
+  );
+  const checklistItems: LaunchChecklistItem[] = launchChecklist.map((item) =>
     item.id === "lc-10"
-      ? { ...item, status: publishState === "done" ? "done" : "needs-review" }
+      ? { ...item, status: publishState === "done" ? "done" as const : "needs-review" as const }
       : item
   );
 
@@ -133,13 +145,25 @@ export default function LaunchTab({
     setPublishModalPhase(publishState === "done" ? "success" : "preview");
   };
 
+  const toggleChannelSelection = (channelId: PublishChannelId) => {
+    setSelectedChannelIds((current) =>
+      current.includes(channelId)
+        ? current.filter((id) => id !== channelId)
+        : [...current, channelId]
+    );
+  };
+
   const handleConfirmPublish = () => {
     const productId = product.id;
+    const channelIdsToPublish = [...selectedChannelIds];
+
+    if (channelIdsToPublish.length === 0) return;
 
     if (publishTimerRef.current !== null) {
       window.clearTimeout(publishTimerRef.current);
     }
 
+    setPublishedChannelIds(channelIdsToPublish);
     onPublishStateChange(productId, "publishing");
     setPublishModalPhase("publishing");
     publishTimerRef.current = window.setTimeout(() => {
@@ -430,7 +454,10 @@ export default function LaunchTab({
                     <div
                       className={`flex h-6 w-6 items-center justify-center rounded-full ${channel.iconWrapperClass}`}
                     >
-                      <BrandIcon brand={channel.id} className="h-4 w-4" />
+                      <CommerceChannelIcon
+                        channelId={channel.id}
+                        className="h-4 w-4"
+                      />
                     </div>
                     <span>{channel.name}</span>
                   </div>
@@ -480,7 +507,11 @@ export default function LaunchTab({
           schemaText={schemaFix?.suggestedValue}
           comparisonText={comparisonFix?.suggestedValue}
           comparison={comparison}
+          locale={locale}
+          selectedChannels={selectedChannels}
+          publishedChannels={publishedChannels}
           t={t}
+          onToggleChannel={toggleChannelSelection}
           onClose={closePublishExperience}
           onConfirmPublish={handleConfirmPublish}
         />
@@ -498,7 +529,11 @@ function PublishFlowModal({
   schemaText,
   comparisonText,
   comparison,
+  locale,
+  selectedChannels,
+  publishedChannels,
   t,
+  onToggleChannel,
   onClose,
   onConfirmPublish,
 }: {
@@ -510,7 +545,11 @@ function PublishFlowModal({
   schemaText?: string;
   comparisonText?: string;
   comparison: ReturnType<typeof getComparison>;
+  locale: Locale;
+  selectedChannels: PublishChannel[];
+  publishedChannels: PublishChannel[];
   t: (key: TranslationKey) => string;
+  onToggleChannel: (channelId: PublishChannelId) => void;
   onClose: () => void;
   onConfirmPublish: () => void;
 }) {
@@ -523,6 +562,15 @@ function PublishFlowModal({
         .filter(Boolean)
         .join(" • ")
     : "";
+  const activeChannels =
+    phase === "preview" ? selectedChannels : publishedChannels;
+  const activeChannelCount = activeChannels.length;
+  const modalDescription =
+    phase === "preview"
+      ? t("launch.previewDesc")
+      : phase === "publishing"
+      ? getPublishingDescription(activeChannelCount, locale)
+      : getSuccessDescription(activeChannelCount, locale);
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 md:p-6">
@@ -558,11 +606,7 @@ function PublishFlowModal({
                 : t("launch.successTitle")}
             </h2>
             <p className="mt-1 text-sm text-zinc-500">
-              {phase === "preview"
-                ? t("launch.previewDesc")
-                : phase === "publishing"
-                ? t("launch.publishingDesc")
-                : t("launch.successDesc")}
+              {modalDescription}
             </p>
           </div>
 
@@ -646,13 +690,13 @@ function PublishFlowModal({
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                        {t("launch.publishChannels")}
+                        {t("launch.selectChannels")}
                       </h3>
                       <p className="mt-1 text-sm text-zinc-500">
-                        {t("launch.channelsReady")}
+                        {t("launch.channelSelectionHint")}
                       </p>
                     </div>
-                    <Badge variant="info">4</Badge>
+                    <Badge variant="info">{selectedChannels.length}</Badge>
                   </div>
 
                   <div className="mt-4 space-y-3">
@@ -660,11 +704,21 @@ function PublishFlowModal({
                       <PublishChannelRow
                         key={channel.id}
                         channel={channel}
-                        mode="ready"
+                        mode="selectable"
+                        selected={selectedChannels.some(
+                          (selectedChannel) => selectedChannel.id === channel.id
+                        )}
                         t={t}
+                        onToggle={onToggleChannel}
                       />
                     ))}
                   </div>
+
+                  {selectedChannels.length === 0 && (
+                    <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
+                      {t("launch.selectAtLeastOneChannel")}
+                    </div>
+                  )}
                 </div>
 
                 <div className="rounded-[24px] border border-zinc-200 bg-white/90 p-5 dark:border-zinc-800 dark:bg-zinc-900/75">
@@ -767,8 +821,8 @@ function PublishFlowModal({
                       }
                     />
                     <PublishingStat
-                      title={t("launch.publishChannels")}
-                      value="4"
+                      title={t("launch.selectedChannels")}
+                      value={publishedChannels.length.toString()}
                     />
                   </div>
                 </div>
@@ -781,14 +835,14 @@ function PublishFlowModal({
                           {t("launch.publishChannels")}
                         </h3>
                         <p className="mt-1 text-sm text-zinc-500">
-                          {t("launch.channelsReady")}
+                          {getPublishingSummary(activeChannelCount, locale)}
                         </p>
                       </div>
-                      <Badge variant="info">4</Badge>
+                      <Badge variant="info">{activeChannelCount}</Badge>
                     </div>
 
                     <div className="mt-4 grid gap-3">
-                      {PUBLISH_CHANNELS.map((channel) => (
+                      {activeChannels.map((channel) => (
                         <PublishChannelRow
                           key={channel.id}
                           channel={channel}
@@ -847,7 +901,7 @@ function PublishFlowModal({
                   {t("launch.successTitle")}
                 </h3>
                 <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                  {t("launch.successDesc")}
+                  {getSuccessDescription(activeChannelCount, locale)}
                 </p>
 
                 <div className="mt-6 rounded-[24px] border border-white/70 bg-white/85 p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/70">
@@ -884,10 +938,10 @@ function PublishFlowModal({
                     {t("launch.liveStatus")}
                   </h3>
                   <p className="mt-1 text-sm text-zinc-500">
-                    {t("launch.channelsLive")}
+                    {getLiveChannelsSummary(activeChannelCount, locale)}
                   </p>
                   <div className="mt-4 space-y-3">
-                    {PUBLISH_CHANNELS.map((channel) => (
+                    {activeChannels.map((channel) => (
                       <PublishChannelRow
                         key={channel.id}
                         channel={channel}
@@ -934,7 +988,11 @@ function PublishFlowModal({
 
         {phase === "preview" && (
           <div className="flex flex-col gap-3 border-t border-zinc-200/80 px-6 py-4 dark:border-zinc-800 md:flex-row md:items-center md:justify-between">
-            <div className="text-sm text-zinc-500">{t("launch.channelsReady")}</div>
+            <div className="text-sm text-zinc-500">
+              {activeChannelCount > 0
+                ? getSelectedChannelsSummary(activeChannelCount, locale)
+                : t("launch.selectAtLeastOneChannel")}
+            </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={onClose}
@@ -944,10 +1002,15 @@ function PublishFlowModal({
               </button>
               <button
                 onClick={onConfirmPublish}
-                className="flex items-center gap-2 rounded-xl bg-zinc-950 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
+                disabled={activeChannelCount === 0}
+                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors ${
+                  activeChannelCount === 0
+                    ? "cursor-not-allowed bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+                    : "bg-zinc-950 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
+                }`}
               >
                 <Rocket className="h-4 w-4" />
-                {t("launch.publishAction")}
+                {getPublishActionLabel(activeChannelCount, locale)}
               </button>
             </div>
           </div>
@@ -955,7 +1018,9 @@ function PublishFlowModal({
 
         {phase === "success" && (
           <div className="flex flex-col gap-3 border-t border-zinc-200/80 px-6 py-4 dark:border-zinc-800 md:flex-row md:items-center md:justify-between">
-            <div className="text-sm text-zinc-500">{t("launch.channelsLive")}</div>
+            <div className="text-sm text-zinc-500">
+              {getLiveChannelsSummary(activeChannelCount, locale)}
+            </div>
             <button
               onClick={onClose}
               className="rounded-xl bg-zinc-950 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white"
@@ -1242,18 +1307,26 @@ function PublishChannelRow({
   mode,
   t,
   large = false,
+  selected = true,
+  onToggle,
 }: {
   channel: PublishChannel;
-  mode: "ready" | "publishing" | "live";
+  mode: "ready" | "publishing" | "live" | "selectable";
   t: (key: TranslationKey) => string;
   large?: boolean;
+  selected?: boolean;
+  onToggle?: (channelId: PublishChannelId) => void;
 }) {
   const statusLabel =
     mode === "ready"
       ? t("launch.ready")
       : mode === "publishing"
       ? t("launch.publishing")
-      : t("launch.live");
+      : mode === "live"
+      ? t("launch.live")
+      : selected
+      ? t("launch.selected")
+      : t("launch.notSelected");
 
   if (mode === "publishing" && large) {
     return (
@@ -1264,7 +1337,7 @@ function PublishChannelRow({
           <div
             className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${channel.iconWrapperClass}`}
           >
-            <BrandIcon brand={channel.id} className="h-7 w-7" />
+            <CommerceChannelIcon channelId={channel.id} className="h-7 w-7" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
@@ -1283,6 +1356,60 @@ function PublishChannelRow({
     );
   }
 
+  if (mode === "selectable") {
+    return (
+      <button
+        type="button"
+        onClick={() => onToggle?.(channel.id)}
+        className={`w-full rounded-[20px] border p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:bg-zinc-950/70 ${
+          selected
+            ? `${channel.borderClass} bg-white/95 ring-2 ring-blue-100 dark:ring-blue-500/10`
+            : "border-zinc-200 bg-zinc-50/70 opacity-80 dark:border-zinc-800 dark:bg-zinc-900/60"
+        }`}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div
+              className={`flex h-11 w-11 items-center justify-center rounded-2xl ${channel.iconWrapperClass}`}
+            >
+              <CommerceChannelIcon
+                channelId={channel.id}
+                className="h-6 w-6"
+              />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                {channel.name}
+              </div>
+              <div className="mt-1 text-xs text-zinc-500">{t("launch.ready")}</div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-xs font-medium ${
+                selected
+                  ? "text-blue-600 dark:text-blue-400"
+                  : "text-zinc-400 dark:text-zinc-500"
+              }`}
+            >
+              {statusLabel}
+            </span>
+            <div
+              className={`flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${
+                selected
+                  ? "border-blue-500 bg-blue-500 text-white"
+                  : "border-zinc-300 bg-white text-transparent dark:border-zinc-700 dark:bg-zinc-900"
+              }`}
+            >
+              <Check className="h-3 w-3" />
+            </div>
+          </div>
+        </div>
+      </button>
+    );
+  }
+
   return (
     <div
       className={`rounded-[20px] border bg-white/85 p-4 shadow-sm dark:bg-zinc-950/70 ${channel.borderClass}`}
@@ -1292,7 +1419,10 @@ function PublishChannelRow({
           <div
             className={`flex h-11 w-11 items-center justify-center rounded-2xl ${channel.iconWrapperClass}`}
           >
-            <BrandIcon brand={channel.id} className="h-6 w-6" />
+            <CommerceChannelIcon
+              channelId={channel.id}
+              className="h-6 w-6"
+            />
           </div>
           <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
             {channel.name}
@@ -1376,80 +1506,40 @@ function PackageRow({
   );
 }
 
-function BrandIcon({
-  brand,
-  className,
-}: {
-  brand: PublishChannelId;
-  className?: string;
-}) {
-  switch (brand) {
-    case "shopify":
-      return (
-        <svg viewBox="0 0 24 24" className={className} fill="none">
-          <path
-            d="M7 8.25C7 7.56 7.56 7 8.25 7h7.5C16.44 7 17 7.56 17 8.25V9H7v-.75Z"
-            fill="#8DBB46"
-          />
-          <path
-            d="M6 9.25h12l1.05 9.04A1.5 1.5 0 0 1 17.56 20H6.44a1.5 1.5 0 0 1-1.49-1.71L6 9.25Z"
-            fill="#95BF47"
-          />
-          <path
-            d="M9 9V7a3 3 0 0 1 6 0v2"
-            stroke="white"
-            strokeWidth="1.6"
-            strokeLinecap="round"
-          />
-          <text
-            x="12"
-            y="16"
-            textAnchor="middle"
-            fontSize="7.6"
-            fontWeight="700"
-            fill="white"
-            fontFamily="Arial, sans-serif"
-          >
-            S
-          </text>
-        </svg>
-      );
-    case "tiktok":
-      return (
-        <svg viewBox="0 0 24 24" className={className} fill="none">
-          <path
-            d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07Z"
-            fill="currentColor"
-          />
-        </svg>
-      );
-    case "amazon":
-      return (
-        <svg viewBox="0 0 448 512" className={className} fill="none">
-          <path
-            d="M257.2 162.7c-48.7 1.8-169.5 15.5-169.5 117.5 0 109.5 138.3 114 183.5 43.2 6.5 10.2 35.4 37.5 45.3 46.8l56.8-56S341 288.9 341 261.4V114.3C341 89 316.5 32 228.7 32 140.7 32 94 87 94 136.3l73.5 6.8c16.3-49.5 54.2-49.5 54.2-49.5 40.7-.1 35.5 29.8 35.5 69.1Zm0 86.8c0 80-84.2 68-84.2 17.2 0-47.2 50.5-56.7 84.2-57.8v40.6Zm136 163.5c-7.7 10-70 67-174.5 67S34.2 408.5 9.7 379c-6.8-7.7 1-11.3 5.5-8.3C88.5 415.2 203 488.5 387.7 401c7.5-3.7 13.3 2 5.5 12Zm39.8 2.2c-6.5 15.8-16 26.8-21.2 31-5.5 4.5-9.5 2.7-6.5-3.8s19.3-46.5 12.7-55c-6.5-8.3-37-4.3-48-3.2-10.8 1-13 2-14-.3-2.3-5.7 21.7-15.5 37.5-17.5 15.7-1.8 41-.8 46 5.7 3.7 5.1 0 27.1-6.5 43.1Z"
-            fill="currentColor"
-          />
-        </svg>
-      );
-    case "stripe":
-      return (
-        <svg viewBox="0 0 24 24" className={className} fill="none">
-          <rect x="2.5" y="4" width="19" height="16" rx="5" fill="#635BFF" />
-          <text
-            x="12"
-            y="15.2"
-            textAnchor="middle"
-            fontSize="8.4"
-            fontWeight="700"
-            fill="white"
-            fontFamily="Arial, sans-serif"
-          >
-            S
-          </text>
-        </svg>
-      );
-  }
+function getSelectedChannelsSummary(count: number, locale: Locale) {
+  return locale === "zh"
+    ? `已选择 ${count} 个渠道`
+    : `${count} channel${count === 1 ? "" : "s"} selected`;
+}
+
+function getPublishingSummary(count: number, locale: Locale) {
+  return locale === "zh"
+    ? `正在同步到 ${count} 个已选渠道`
+    : `Syncing to ${count} selected channel${count === 1 ? "" : "s"}`;
+}
+
+function getPublishingDescription(count: number, locale: Locale) {
+  return locale === "zh"
+    ? `正在把更新后的商品页、FAQ 和结构化数据同步到 ${count} 个已选渠道。`
+    : `Syncing your updated listing, FAQ, and structured data to ${count} selected channel${count === 1 ? "" : "s"}.`;
+}
+
+function getLiveChannelsSummary(count: number, locale: Locale) {
+  return locale === "zh"
+    ? `${count} 个渠道已上线`
+    : `${count} channel${count === 1 ? " is" : "s are"} live`;
+}
+
+function getSuccessDescription(count: number, locale: Locale) {
+  return locale === "zh"
+    ? `更新后的商品内容已经同步到所选的 ${count} 个商业渠道，可以继续查看上线结果。`
+    : `Your updated product package is now live across ${count} selected commerce channel${count === 1 ? "" : "s"}.`;
+}
+
+function getPublishActionLabel(count: number, locale: Locale) {
+  return locale === "zh"
+    ? `发布到 ${count} 个渠道`
+    : `Publish to ${count} channel${count === 1 ? "" : "s"}`;
 }
 
 function ComparisonMetric({

@@ -9,6 +9,7 @@ export const zh: Record<TranslationKey, string> = {
 
   // Sidebar
   "sidebar.catalog": "商品目录",
+  "sidebar.settings": "设置",
   "sidebar.category.electronics": "电子产品",
   "sidebar.category.outdoor": "户外运动",
   "sidebar.category.pets": "宠物用品",
@@ -61,6 +62,8 @@ export const zh: Record<TranslationKey, string> = {
   "geo.fixType.faq": "FAQ 生成",
   "geo.fixType.comparison": "对比表格",
   "geo.fixType.schema": "JSON-LD 结构化数据",
+  "geo.loading": "分析中...",
+  "geo.apiError": "使用本地数据",
 
   // Channels Tab
   "channels.title": "AI 商业渠道",
@@ -174,6 +177,12 @@ export const zh: Record<TranslationKey, string> = {
   "header.logout": "退出登录",
   "header.importData": "导入数据",
 
+  // Logout Confirm
+  "logoutConfirm.title": "退出登录",
+  "logoutConfirm.message": "确定要退出登录吗？",
+  "logoutConfirm.cancel": "取消",
+  "logoutConfirm.confirm": "退出",
+
   // Onboarding
   "onboarding.title": "导入您的店铺数据",
   "onboarding.subtitle": "连接您的电商平台，开始使用 AI 驱动的商品优化",
@@ -197,6 +206,11 @@ export const zh: Record<TranslationKey, string> = {
   "import.productsImported": "件商品导入成功",
   "import.continue": "进入仪表盘",
   "import.importing": "正在从",
+
+  // Settings
+  "settings.subtitle": "管理您的店铺数据和偏好设置",
+  "settings.dataManagement": "数据管理",
+  "settings.dataManagementDesc": "从已连接的电商平台导入商品数据。",
 
   // Import Modal
   "importModal.title": "导入新数据",

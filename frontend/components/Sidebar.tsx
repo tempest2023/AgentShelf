@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Package } from "lucide-react";
+import { ChevronDown, Package, Settings } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/context";
 import type { Product } from "@/lib/types";
 
@@ -9,20 +9,24 @@ interface SidebarProps {
   products: Product[];
   selectedProduct: Product;
   onSelectProduct: (product: Product) => void;
+  activeTab: string;
+  onTabChange: (tab: string) => void;
 }
 
 export default function Sidebar({
   products,
   selectedProduct,
   onSelectProduct,
+  activeTab,
+  onTabChange,
 }: SidebarProps) {
   const [expanded, setExpanded] = useState(true);
   const { t } = useLanguage();
 
   return (
     <aside
-      className={`border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 flex flex-col transition-all duration-300 ${
-        expanded ? "w-64" : "w-16"
+      className={`w-full shrink-0 flex flex-col border-b border-zinc-200 bg-zinc-50 transition-[width] duration-300 dark:border-zinc-800 dark:bg-zinc-900/50 md:border-b-0 md:border-r ${
+        expanded ? "md:w-64" : "md:w-16"
       }`}
     >
       <div className="p-3 border-b border-zinc-200 dark:border-zinc-800">
@@ -31,23 +35,23 @@ export default function Sidebar({
           className="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
         >
           <Package className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-          {expanded && (
-            <>
-              <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider flex-1">
-                {t("sidebar.catalog")}
-              </span>
-              <ChevronDown
-                className={`w-3.5 h-3.5 text-zinc-500 transition-transform ${
-                  expanded ? "" : "-rotate-90"
-                }`}
-              />
-            </>
-          )}
+          <span
+            className={`flex-1 text-xs font-medium uppercase tracking-wider text-zinc-400 ${
+              expanded ? "" : "md:hidden"
+            }`}
+          >
+            {t("sidebar.catalog")}
+          </span>
+          <ChevronDown
+            className={`w-3.5 h-3.5 text-zinc-500 transition-transform ${
+              expanded ? "" : "-rotate-90"
+            }`}
+          />
         </button>
       </div>
 
       {expanded && (
-        <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
+        <div className="max-h-56 overflow-y-auto p-2 space-y-0.5 md:max-h-none md:flex-1">
           {products.map((product) => (
             <button
               key={product.id}
@@ -85,6 +89,30 @@ export default function Sidebar({
           ))}
         </div>
       )}
+
+      <div className="border-t border-zinc-200 dark:border-zinc-800 p-2 mt-auto">
+        <button
+          onClick={() => onTabChange("settings")}
+          className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg transition-colors ${
+            activeTab === "settings"
+              ? "bg-blue-500/15 border border-blue-500/30"
+              : "hover:bg-zinc-100 dark:hover:bg-zinc-800/70 border border-transparent"
+          }`}
+        >
+          <Settings className={`w-4 h-4 flex-shrink-0 ${
+            activeTab === "settings"
+              ? "text-blue-500"
+              : "text-zinc-400"
+          }`} />
+          <span className={`text-sm font-medium ${
+            activeTab === "settings"
+              ? "text-blue-600 dark:text-blue-300"
+              : "text-zinc-700 dark:text-zinc-300"
+          } ${expanded ? "" : "md:hidden"}`}>
+            {t("sidebar.settings")}
+          </span>
+        </button>
+      </div>
     </aside>
   );
 }
