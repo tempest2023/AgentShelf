@@ -21,7 +21,6 @@ import type { TranslationKey } from "@/lib/i18n/translations";
 import Card, { CardHeader, CardTitle } from "@/components/Card";
 import ScoreRing from "@/components/ScoreRing";
 import Badge from "@/components/Badge";
-import GeoAgentPanel from "@/components/geo/GeoAgentPanel";
 import type { Category } from "@/lib/types";
 
 const suggestedQueries: Record<Category, string[]> = {
@@ -122,7 +121,7 @@ export default function GEOTab({ product }: { product: Product }) {
         </p>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start">
+      <div className="grid gap-6 xl:items-start">
         <div className="min-w-0 space-y-6">
           {/* Score overview */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -342,10 +341,6 @@ export default function GEOTab({ product }: { product: Product }) {
               ))}
             </div>
           </Card>
-        </div>
-
-        <div className="min-w-0 xl:sticky xl:top-6">
-          <GeoAgentPanel key={product.id} selectedProduct={product} />
         </div>
       </div>
     </div>

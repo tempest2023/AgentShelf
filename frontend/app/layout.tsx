@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import "@copilotkit/react-core/v2/styles.css";
 import Providers from "@/components/Providers";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });

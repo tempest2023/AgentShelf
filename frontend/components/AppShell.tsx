@@ -9,6 +9,7 @@ import GEOTab from "./tabs/GEOTab";
 import ChannelsTab from "./tabs/ChannelsTab";
 import LaunchTab from "./tabs/LaunchTab";
 import SettingsTab from "./tabs/SettingsTab";
+import GeoAgentSidebar from "./geo/GeoAgentSidebar";
 import { products } from "@/lib/mock";
 import { useAuth } from "@/lib/auth/context";
 import { useLanguage } from "@/lib/i18n/context";
@@ -20,6 +21,7 @@ export default function AppShell() {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [agentSidebarOpen, setAgentSidebarOpen] = useState(false);
 
   const storeProducts = useMemo(
     () => products.filter((p) => p.category === user?.category),
@@ -112,6 +114,14 @@ export default function AppShell() {
           cancelLabel={t("logoutConfirm.cancel")}
           icon={<LogOut className="h-5 w-5 text-red-600 dark:text-red-400" />}
           variant="danger"
+        />
+      )}
+
+      {activeTab === "geo" && (
+        <GeoAgentSidebar
+          open={agentSidebarOpen}
+          onToggle={() => setAgentSidebarOpen((prev) => !prev)}
+          selectedProduct={selectedProduct}
         />
       )}
     </div>
