@@ -21,6 +21,7 @@ import type { TranslationKey } from "@/lib/i18n/translations";
 import Card, { CardHeader, CardTitle } from "@/components/Card";
 import ScoreRing from "@/components/ScoreRing";
 import Badge from "@/components/Badge";
+import GeoAgentPanel from "@/components/geo/GeoAgentPanel";
 
 export default function GEOTab({ product }: { product: Product }) {
   const [query, setQuery] = useState("");
@@ -47,201 +48,209 @@ export default function GEOTab({ product }: { product: Product }) {
         </p>
       </div>
 
-      {/* Score overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="md:col-span-1 flex flex-col items-center justify-center py-6">
-          <ScoreRing score={audit.aiReadinessScore} size={140} strokeWidth={10} />
-          <span className="text-xs text-zinc-500 mt-3 font-medium uppercase tracking-wider">
-            {t("geo.aiReadiness")}
-          </span>
-        </Card>
-        <Card className="md:col-span-3">
-          <CardHeader>
-            <CardTitle>{t("geo.scoreBreakdown")}</CardTitle>
-          </CardHeader>
-          <div className="grid grid-cols-3 gap-6">
-            <MiniScore
-              label={t("geo.discoverability")}
-              score={audit.discoverabilityScore}
-              icon={<Target className="w-4 h-4" />}
-            />
-            <MiniScore
-              label={t("geo.clarity")}
-              score={audit.clarityScore}
-              icon={<FileText className="w-4 h-4" />}
-            />
-            <MiniScore
-              label={t("geo.schema")}
-              score={audit.schemaScore}
-              icon={<Code2 className="w-4 h-4" />}
-            />
-          </div>
-          <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-            <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-              <span className="font-medium text-zinc-700 dark:text-zinc-300">{t("geo.product")}:</span>
-              {product.title}
-            </div>
-            <div className="flex items-center gap-4 mt-1 text-sm text-zinc-500">
-              <span>
-                {t("geo.brand")}: <span className="text-zinc-700 dark:text-zinc-400">{product.brand}</span>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start">
+        <div className="min-w-0 space-y-6">
+          {/* Score overview */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card className="md:col-span-1 flex flex-col items-center justify-center py-6">
+              <ScoreRing score={audit.aiReadinessScore} size={140} strokeWidth={10} />
+              <span className="text-xs text-zinc-500 mt-3 font-medium uppercase tracking-wider">
+                {t("geo.aiReadiness")}
               </span>
-              <span>
-                {t("geo.price")}:{" "}
-                <span className="text-zinc-700 dark:text-zinc-400">${product.price}</span>
-              </span>
-              {product.reviews && (
-                <span>
-                  {t("geo.rating")}:{" "}
-                  <span className="text-zinc-700 dark:text-zinc-400">
-                    {product.reviews.rating}/5 ({product.reviews.count.toLocaleString()}{" "}
-                    {t("geo.reviews")})
+            </Card>
+            <Card className="md:col-span-3">
+              <CardHeader>
+                <CardTitle>{t("geo.scoreBreakdown")}</CardTitle>
+              </CardHeader>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <MiniScore
+                  label={t("geo.discoverability")}
+                  score={audit.discoverabilityScore}
+                  icon={<Target className="w-4 h-4" />}
+                />
+                <MiniScore
+                  label={t("geo.clarity")}
+                  score={audit.clarityScore}
+                  icon={<FileText className="w-4 h-4" />}
+                />
+                <MiniScore
+                  label={t("geo.schema")}
+                  score={audit.schemaScore}
+                  icon={<Code2 className="w-4 h-4" />}
+                />
+              </div>
+              <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+                  <span className="font-medium text-zinc-700 dark:text-zinc-300">{t("geo.product")}:</span>
+                  {product.title}
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-zinc-500">
+                  <span>
+                    {t("geo.brand")}: <span className="text-zinc-700 dark:text-zinc-400">{product.brand}</span>
                   </span>
-                </span>
-              )}
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Missing signals */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-amber-400" />
-            <CardTitle>{t("geo.missingSignals")}</CardTitle>
-          </div>
-          <Badge variant="warning">
-            {audit.missingSignals.length} {t("geo.issues")}
-          </Badge>
-        </CardHeader>
-        <div className="space-y-2 stagger-children">
-          {audit.missingSignals.map((signal, i) => (
-            <div
-              key={i}
-              className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800"
-            >
-              <AlertTriangle className="w-4 h-4 text-amber-500/70 dark:text-amber-400/70 mt-0.5 flex-shrink-0" />
-              <span className="text-sm text-zinc-700 dark:text-zinc-300">{signal}</span>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Query Simulator */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Search className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            <CardTitle>{t("geo.querySimulator")}</CardTitle>
-          </div>
-        </CardHeader>
-        <p className="text-sm text-zinc-500 mb-4">
-          {t("geo.querySimulatorDesc")}
-        </p>
-        <div className="flex gap-3">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSimulate()}
-              placeholder={t(`geo.queryPlaceholder.${product.category}` as TranslationKey)}
-              className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg text-sm text-zinc-900 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-colors"
-            />
-          </div>
-          <button
-            onClick={handleSimulate}
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
-          >
-            <Sparkles className="w-4 h-4" />
-            {t("geo.simulate")}
-          </button>
-        </div>
-
-        {simulation && (
-          <div className="mt-5 space-y-4 animate-fade-in-up">
-            <div className="px-4 py-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
-              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-xs font-medium mb-2">
-                <MessageSquare className="w-3.5 h-3.5" />
-                {t("geo.agentPreview")}
+                  <span>
+                    {t("geo.price")}:{" "}
+                    <span className="text-zinc-700 dark:text-zinc-400">${product.price}</span>
+                  </span>
+                  {product.reviews && (
+                    <span>
+                      {t("geo.rating")}:{" "}
+                      <span className="text-zinc-700 dark:text-zinc-400">
+                        {product.reviews.rating}/5 ({product.reviews.count.toLocaleString()}{" "}
+                        {t("geo.reviews")})
+                      </span>
+                    </span>
+                  )}
+                </div>
               </div>
-              <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                {simulation.agentPreviewAnswer}
-              </p>
+            </Card>
+          </div>
+
+          {/* Missing signals */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                <CardTitle>{t("geo.missingSignals")}</CardTitle>
+              </div>
+              <Badge variant="warning">
+                {audit.missingSignals.length} {t("geo.issues")}
+              </Badge>
+            </CardHeader>
+            <div className="space-y-2 stagger-children">
+              {audit.missingSignals.map((signal, i) => (
+                <div
+                  key={i}
+                  className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800"
+                >
+                  <AlertTriangle className="w-4 h-4 text-amber-500/70 dark:text-amber-400/70 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm text-zinc-700 dark:text-zinc-300">{signal}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Query Simulator */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Search className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <CardTitle>{t("geo.querySimulator")}</CardTitle>
+              </div>
+            </CardHeader>
+            <p className="text-sm text-zinc-500 mb-4">
+              {t("geo.querySimulatorDesc")}
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSimulate()}
+                  placeholder={t(`geo.queryPlaceholder.${product.category}` as TranslationKey)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg text-sm text-zinc-900 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-colors"
+                />
+              </div>
+              <button
+                onClick={handleSimulate}
+                className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-500 sm:self-auto"
+              >
+                <Sparkles className="w-4 h-4" />
+                {t("geo.simulate")}
+              </button>
             </div>
 
-            <div>
-              <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">
-                {t("geo.productMatchResults")}
-              </h4>
-              <div className="space-y-2">
-                {simulation.matches.map((match, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-4 px-4 py-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800"
-                  >
-                    <div className="flex-shrink-0">
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
-                          match.matchScore >= 80
-                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                            : match.matchScore >= 60
-                            ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                            : "bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400"
-                        }`}
-                      >
-                        {match.matchScore}
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                        Product ID: {match.productId}
-                      </div>
-                      <div className="text-xs text-zinc-500 mt-0.5">
-                        {match.reason}
-                      </div>
-                    </div>
-                    {match.missingSignals.length > 0 && (
-                      <div className="flex-shrink-0">
-                        <Badge variant="warning">
-                          {match.missingSignals.length} {t("geo.gaps")}
-                        </Badge>
-                      </div>
-                    )}
+            {simulation && (
+              <div className="mt-5 space-y-4 animate-fade-in-up">
+                <div className="px-4 py-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                  <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-xs font-medium mb-2">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    {t("geo.agentPreview")}
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </Card>
+                  <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                    {simulation.agentPreviewAnswer}
+                  </p>
+                </div>
 
-      {/* GEO Fixes */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Lightbulb className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <CardTitle>{t("geo.recommendedFixes")}</CardTitle>
-          </div>
-          <Badge variant="info">
-            {audit.recommendedFixes.length} {t("geo.suggestions")}
-          </Badge>
-        </CardHeader>
-        <div className="space-y-2 stagger-children">
-          {audit.recommendedFixes.map((fix, i) => (
-            <GeoFixCard
-              key={i}
-              fix={fix}
-              expanded={expandedFix === i}
-              onToggle={() =>
-                setExpandedFix(expandedFix === i ? null : i)
-              }
-              t={t}
-            />
-          ))}
+                <div>
+                  <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">
+                    {t("geo.productMatchResults")}
+                  </h4>
+                  <div className="space-y-2">
+                    {simulation.matches.map((match, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-4 px-4 py-3 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800"
+                      >
+                        <div className="flex-shrink-0">
+                          <div
+                            className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                              match.matchScore >= 80
+                                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                                : match.matchScore >= 60
+                                ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                                : "bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400"
+                            }`}
+                          >
+                            {match.matchScore}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                            Product ID: {match.productId}
+                          </div>
+                          <div className="text-xs text-zinc-500 mt-0.5">
+                            {match.reason}
+                          </div>
+                        </div>
+                        {match.missingSignals.length > 0 && (
+                          <div className="flex-shrink-0">
+                            <Badge variant="warning">
+                              {match.missingSignals.length} {t("geo.gaps")}
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </Card>
+
+          {/* GEO Fixes */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <CardTitle>{t("geo.recommendedFixes")}</CardTitle>
+              </div>
+              <Badge variant="info">
+                {audit.recommendedFixes.length} {t("geo.suggestions")}
+              </Badge>
+            </CardHeader>
+            <div className="space-y-2 stagger-children">
+              {audit.recommendedFixes.map((fix, i) => (
+                <GeoFixCard
+                  key={i}
+                  fix={fix}
+                  expanded={expandedFix === i}
+                  onToggle={() =>
+                    setExpandedFix(expandedFix === i ? null : i)
+                  }
+                  t={t}
+                />
+              ))}
+            </div>
+          </Card>
         </div>
-      </Card>
+
+        <div className="min-w-0 xl:sticky xl:top-6">
+          <GeoAgentPanel key={product.id} selectedProduct={product} />
+        </div>
+      </div>
     </div>
   );
 }

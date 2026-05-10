@@ -3,9 +3,9 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useState,
   useCallback,
-  useSyncExternalStore,
   ReactNode,
 } from "react";
 import type { Category } from "@/lib/types";
@@ -84,11 +84,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     return null;
   });
-  const isHydrated = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const login = useCallback((userId: string) => {
     const found = MOCK_USERS.find((u) => u.id === userId);

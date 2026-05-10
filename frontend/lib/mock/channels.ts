@@ -1,4 +1,5 @@
 import { ChatGPTCommercialPack, GoogleAIModeChecklist } from "../types";
+import { deterministicInteger } from "./utils";
 
 export const chatgptPacks: Record<string, ChatGPTCommercialPack> = {
   "elec-001": {
@@ -146,7 +147,7 @@ export function getGoogleChecklist(productId: string): GoogleAIModeChecklist {
   if (googleChecklists[productId]) return googleChecklists[productId];
   return {
     productId,
-    score: 55 + Math.floor(Math.random() * 20),
+    score: deterministicInteger(`${productId}:google-score`, 55, 74),
     items: [
       { label: "Product Title Quality", status: "warn", detail: "Title could be more descriptive" },
       { label: "Description Completeness", status: "warn", detail: "Description needs more detail" },

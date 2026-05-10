@@ -1,4 +1,5 @@
 import { SeoGeoComparison, Category } from "../types";
+import { deterministicInteger, deterministicNumber } from "./utils";
 
 const categoryDefaults: Record<Category, { seoConversion: number; geoConversion: number; seoTraffic: number }> = {
   electronics: { seoConversion: 2.1, geoConversion: 5.2, seoTraffic: 15000 },
@@ -99,28 +100,44 @@ export function getComparison(productId: string, category: Category): SeoGeoComp
   if (mockComparisons[productId]) return mockComparisons[productId];
 
   const defaults = categoryDefaults[category];
-  const trafficMultiplier = 1.4 + Math.random() * 0.3;
-  const conversionMultiplier = 2 + Math.random() * 0.8;
+  const seoTraffic =
+    defaults.seoTraffic +
+    deterministicInteger(`${productId}:seo-traffic`, 400, 4800);
+  const trafficMultiplier = deterministicNumber(
+    `${productId}:traffic-multiplier`,
+    1.4,
+    1.7,
+    2
+  );
+  const conversionMultiplier = deterministicNumber(
+    `${productId}:conversion-multiplier`,
+    2,
+    2.8,
+    2
+  );
+  const seoCac = deterministicNumber(`${productId}:seo-cac`, 2, 5, 1);
+  const geoCac = deterministicNumber(`${productId}:geo-cac`, 1, 2.5, 1);
+  const geoTraffic = Math.round(seoTraffic * trafficMultiplier);
 
   return {
     productId,
     category,
     seoMetrics: {
-      estimatedMonthlyTraffic: defaults.seoTraffic + Math.floor(Math.random() * 5000),
+      estimatedMonthlyTraffic: seoTraffic,
       conversionRate: defaults.seoConversion,
-      cac: 2 + Math.random() * 3,
+      cac: seoCac,
       channelCoverage: "Google Search only",
     },
     geoMetrics: {
-      estimatedMonthlyTraffic: Math.floor((defaults.seoTraffic + Math.random() * 5000) * trafficMultiplier),
+      estimatedMonthlyTraffic: geoTraffic,
       conversionRate: defaults.geoConversion,
-      cac: 1 + Math.random() * 1.5,
+      cac: geoCac,
       channelCoverage: ["ChatGPT", "Google AI Mode", "Perplexity"],
     },
     improvementPercent: {
       traffic: Math.floor((trafficMultiplier - 1) * 100),
       conversion: Math.floor((conversionMultiplier - 1) * 100),
-      cacReduction: 45 + Math.floor(Math.random() * 15),
+      cacReduction: deterministicInteger(`${productId}:cac-reduction`, 45, 59),
     },
   };
 }

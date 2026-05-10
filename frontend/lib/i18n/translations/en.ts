@@ -50,6 +50,11 @@ export const en = {
   "geo.current": "Current",
   "geo.suggested": "Suggested",
   "geo.reasoning": "Reasoning",
+  "geo.agentCopilotTitle": "GEO Agent",
+  "geo.agentCopilotSubtitle":
+    "Ask for category metrics, product breakdowns, or GEO vs SEO comparisons and get a chart back in chat.",
+  "geo.agentCopilotHint":
+    "The starter prompts below are clickable, and the chart cards stay interactive after they are generated.",
   "geo.fixType.title": "Title Optimization",
   "geo.fixType.description": "Description Enhancement",
   "geo.fixType.faq": "FAQ Generation",

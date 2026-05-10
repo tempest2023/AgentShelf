@@ -52,6 +52,11 @@ export const zh: Record<TranslationKey, string> = {
   "geo.current": "当前",
   "geo.suggested": "建议",
   "geo.reasoning": "原因",
+  "geo.agentCopilotTitle": "GEO 智能代理",
+  "geo.agentCopilotSubtitle":
+    "可以直接询问类目指标、当前商品表现，或 GEO 与 SEO 的对比，系统会在对话里生成图表。",
+  "geo.agentCopilotHint":
+    "下面的 3 个问题都可以直接点，生成后的图表也支持继续交互查看。",
   "geo.fixType.title": "标题优化",
   "geo.fixType.description": "描述增强",
   "geo.fixType.faq": "FAQ 生成",

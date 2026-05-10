@@ -1,4 +1,8 @@
 import { ProductAudit } from "../types";
+import {
+  clampNumber,
+  deterministicInteger,
+} from "./utils";
 
 export const mockAudits: Record<string, ProductAudit> = {
   "elec-001": {
@@ -111,13 +115,28 @@ export const mockAudits: Record<string, ProductAudit> = {
 export function getAuditForProduct(productId: string): ProductAudit {
   if (mockAudits[productId]) return mockAudits[productId];
 
-  // Generate a default audit for products without specific mock data
+  const discoverabilityScore = deterministicInteger(
+    `${productId}:discoverability`,
+    50,
+    74
+  );
+  const clarityScore = deterministicInteger(`${productId}:clarity`, 55, 79);
+  const schemaScore = deterministicInteger(`${productId}:schema`, 40, 64);
+  const aiReadinessScore = clampNumber(
+    Math.round(
+      (discoverabilityScore + clarityScore + schemaScore) / 3 +
+        deterministicInteger(`${productId}:readiness-offset`, -2, 5)
+    ),
+    55,
+    78
+  );
+
   return {
     productId,
-    aiReadinessScore: 55 + Math.floor(Math.random() * 20),
-    discoverabilityScore: 50 + Math.floor(Math.random() * 25),
-    clarityScore: 55 + Math.floor(Math.random() * 20),
-    schemaScore: 40 + Math.floor(Math.random() * 25),
+    aiReadinessScore,
+    discoverabilityScore,
+    clarityScore,
+    schemaScore,
     missingSignals: [
       "No structured use-case descriptions",
       "Missing FAQ section",
