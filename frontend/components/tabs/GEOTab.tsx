@@ -22,6 +22,34 @@ import Card, { CardHeader, CardTitle } from "@/components/Card";
 import ScoreRing from "@/components/ScoreRing";
 import Badge from "@/components/Badge";
 import GeoAgentPanel from "@/components/geo/GeoAgentPanel";
+import type { Category } from "@/lib/types";
+
+const suggestedQueries: Record<Category, string[]> = {
+  electronics: [
+    "best noise cancelling headphones for commuting",
+    "best laptop for software development under $2000",
+    "wireless earbuds with long battery life",
+    "4k monitor for photo editing",
+  ],
+  outdoor: [
+    "waterproof hiking backpack for day trips",
+    "lightweight tent for solo camping",
+    "best running shoes for trails",
+    "waterproof jacket for hiking",
+  ],
+  pets: [
+    "best dog leash for large dogs that pull",
+    "interactive cat toys for indoor cats",
+    "orthopedic dog bed for large breeds",
+    "automatic pet feeder with timer",
+  ],
+  health: [
+    "omega 3 fish oil supplement benefits",
+    "best probiotic for gut health",
+    "vitamin d3 supplement for immune support",
+    "collagen peptides for skin and joints",
+  ],
+};
 
 export default function GEOTab({ product }: { product: Product }) {
   const [query, setQuery] = useState("");
@@ -31,10 +59,14 @@ export default function GEOTab({ product }: { product: Product }) {
 
   const audit = getAuditForProduct(product.id);
 
-  const handleSimulate = () => {
-    if (!query.trim()) return;
-    setSimulation(simulateQuery(query, product.category));
+  const handleSimulate = (q?: string) => {
+    const queryText = q ?? query;
+    if (!queryText.trim()) return;
+    setQuery(queryText);
+    setSimulation(simulateQuery(queryText, product.category));
   };
+
+  const suggestions = suggestedQueries[product.category] ?? suggestedQueries.electronics;
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -154,12 +186,25 @@ export default function GEOTab({ product }: { product: Product }) {
                 />
               </div>
               <button
-                onClick={handleSimulate}
+                onClick={() => handleSimulate()}
                 className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-500 sm:self-auto"
               >
                 <Sparkles className="w-4 h-4" />
                 {t("geo.simulate")}
               </button>
+            </div>
+
+            {/* Suggested queries */}
+            <div className="flex flex-wrap gap-2 mt-3">
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSimulate(s)}
+                  className="px-3 py-1.5 text-xs rounded-full border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 hover:border-blue-400 dark:hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+                >
+                  {s}
+                </button>
+              ))}
             </div>
 
             {simulation && (
