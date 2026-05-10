@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { Store, Sun, Moon, Languages, LogOut, X } from "lucide-react";
+import { Store, Sun, Moon, Languages, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useLanguage } from "@/lib/i18n/context";
 import { useAuth } from "@/lib/auth/context";
@@ -9,13 +8,13 @@ import { useAuth } from "@/lib/auth/context";
 interface HeaderProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  onLogoutRequest: () => void;
 }
 
-export default function Header({ activeTab, onTabChange }: HeaderProps) {
+export default function Header({ activeTab, onTabChange, onLogoutRequest }: HeaderProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const { locale, setLocale, t } = useLanguage();
-  const { user, logout } = useAuth();
-  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const { user } = useAuth();
 
   const tabs = [
     { id: "geo", label: t("header.tab.geo") },
@@ -62,7 +61,7 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
           </button>
 
           <button
-            onClick={() => setLogoutConfirmOpen(true)}
+            onClick={onLogoutRequest}
             className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500"
             aria-label={t("header.logout")}
           >
@@ -86,48 +85,6 @@ export default function Header({ activeTab, onTabChange }: HeaderProps) {
           </button>
         ))}
       </nav>
-
-      {logoutConfirmOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setLogoutConfirmOpen(false)}
-          />
-          <div className="relative w-full max-w-sm mx-4 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-6">
-            <button
-              onClick={() => setLogoutConfirmOpen(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <div className="text-center">
-              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-                <LogOut className="h-5 w-5 text-red-600 dark:text-red-400" />
-              </div>
-              <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-1">
-                {t("logoutConfirm.title")}
-              </h3>
-              <p className="text-sm text-zinc-500 mb-5">
-                {t("logoutConfirm.message")}
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setLogoutConfirmOpen(false)}
-                  className="flex-1 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-                >
-                  {t("logoutConfirm.cancel")}
-                </button>
-                <button
-                  onClick={logout}
-                  className="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors"
-                >
-                  {t("logoutConfirm.confirm")}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   );
 }

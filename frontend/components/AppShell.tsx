@@ -1,20 +1,25 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { LogOut } from "lucide-react";
 import Header from "./Header";
 import Sidebar from "./Sidebar";
+import ConfirmModal from "./ConfirmModal";
 import GEOTab from "./tabs/GEOTab";
 import ChannelsTab from "./tabs/ChannelsTab";
 import LaunchTab from "./tabs/LaunchTab";
 import SettingsTab from "./tabs/SettingsTab";
 import { products } from "@/lib/mock";
 import { useAuth } from "@/lib/auth/context";
+import { useLanguage } from "@/lib/i18n/context";
 import type { Product } from "@/lib/types";
 
 type ProductPublishState = "idle" | "publishing" | "done";
 
 export default function AppShell() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const { t } = useLanguage();
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   const storeProducts = useMemo(
     () => products.filter((p) => p.category === user?.category),
@@ -58,9 +63,18 @@ export default function AppShell() {
     }
   }, [activeTab, previousTab]);
 
+  const handleLogoutRequest = useCallback(() => {
+    setLogoutConfirmOpen(true);
+  }, []);
+
+  const handleLogoutConfirm = useCallback(() => {
+    setLogoutConfirmOpen(false);
+    logout();
+  }, [logout]);
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <Header activeTab={activeTab} onTabChange={handleTabChange} />
+      <Header activeTab={activeTab} onTabChange={handleTabChange} onLogoutRequest={handleLogoutRequest} />
       <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
         <Sidebar
           products={storeProducts}
@@ -87,6 +101,19 @@ export default function AppShell() {
           </div>
         </main>
       </div>
+
+      {logoutConfirmOpen && (
+        <ConfirmModal
+          onClose={() => setLogoutConfirmOpen(false)}
+          onConfirm={handleLogoutConfirm}
+          title={t("logoutConfirm.title")}
+          message={t("logoutConfirm.message")}
+          confirmLabel={t("logoutConfirm.confirm")}
+          cancelLabel={t("logoutConfirm.cancel")}
+          icon={<LogOut className="h-5 w-5 text-red-600 dark:text-red-400" />}
+          variant="danger"
+        />
+      )}
     </div>
   );
 }
