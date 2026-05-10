@@ -3,7 +3,6 @@ import type { TranslationKey } from "./en";
 export const zh: Record<TranslationKey, string> = {
   // Header
   "header.subtitle": "AI 商业渠道管理器",
-  "header.demoMode": "演示模式",
   "header.tab.geo": "GEO 就绪度",
   "header.tab.channels": "AI 商业渠道",
   "header.tab.launch": "商业发布包",
@@ -163,7 +162,6 @@ export const zh: Record<TranslationKey, string> = {
   "login.outdoor": "户外运动",
   "login.pets": "宠物用品",
   "login.health": "保健品",
-  "login.footer": "演示用模拟账号",
 
   // Header user
   "header.store": "店铺",

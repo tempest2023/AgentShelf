@@ -146,11 +146,6 @@ export default function LoginPage() {
               );
             })}
           </div>
-
-          {/* Footer */}
-          <p className="text-center text-xs text-zinc-400 dark:text-zinc-500 mt-8">
-            {t("login.footer")}
-          </p>
         </div>
       </div>
     </div>

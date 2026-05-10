@@ -1,7 +1,6 @@
 export const en = {
   // Header
   "header.subtitle": "AI Commerce Channel Manager",
-  "header.demoMode": "Demo Mode",
   "header.tab.geo": "GEO Readiness",
   "header.tab.channels": "AI Commerce Channels",
   "header.tab.launch": "Commercial Launch Pack",
@@ -164,7 +163,6 @@ export const en = {
   "login.outdoor": "Outdoor & Sports",
   "login.pets": "Pet Supplies",
   "login.health": "Health & Supplements",
-  "login.footer": "Mock accounts for demo purposes",
 
   // Header user
   "header.store": "Store",
