@@ -65,13 +65,14 @@ export default function GeoAgentSidebar({
             type="button"
             onClick={onToggle}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+            aria-label="Close GEO Agent"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Sidebar content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex min-h-0 w-full flex-1 items-stretch overflow-hidden bg-zinc-50/80 dark:bg-zinc-950">
           <GeoAgentPanel key={selectedProduct.id} selectedProduct={selectedProduct} />
         </div>
       </aside>
@@ -83,6 +84,7 @@ export default function GeoAgentSidebar({
           onClick={onToggle}
           className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:bg-blue-500 hover:shadow-xl hover:shadow-blue-600/30 hover:scale-105 active:scale-95 dark:bg-blue-500 dark:shadow-blue-500/20 dark:hover:bg-blue-400"
           title="Open GEO Agent"
+          aria-label="Open GEO Agent"
         >
           <Bot className="h-6 w-6" />
         </button>

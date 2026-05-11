@@ -135,7 +135,7 @@ function buildGeoAgentSystemPrompt(
 
 function buildMessages(input: RunAgentInput, systemPrompt: string) {
   const messages = convertMessagesToVercelAISDKMessages(
-    input.messages as Array<{ role?: string; content?: unknown }>,
+    input.messages,
     {
       forwardSystemMessages: true,
       forwardDeveloperMessages: true,
@@ -276,12 +276,8 @@ export const geoDashboardAgent = new BuiltInAgent({
 
           if (part.type === "tool-result") {
             const toolName = "toolName" in part ? part.toolName : "";
-            const toolOutput =
-              "output" in part
-                ? part.output
-                : "result" in part
-                  ? part.result
-                  : undefined;
+            const partRecord = part as Record<string, unknown>;
+            const toolOutput = partRecord.output ?? partRecord.result;
 
             if (
               toolName === GEO_ANALYTICS_TOOL_NAME &&

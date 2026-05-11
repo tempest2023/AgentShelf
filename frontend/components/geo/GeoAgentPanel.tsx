@@ -16,7 +16,6 @@ import type { Product } from "@/lib/types";
 import type { GeoChartPayload, GeoChartUnit } from "@/lib/geo-analytics";
 import { useLanguage } from "@/lib/i18n/context";
 import { useAuth } from "@/lib/auth/context";
-import Card from "@/components/Card";
 
 const geoChartSchema = z.object({
   title: z.string(),
@@ -114,6 +113,32 @@ export default function GeoAgentPanel({
     [locale]
   );
 
+  const chatView = useMemo(
+    () => ({
+      welcomeScreen: false,
+      input: {
+        className: "geo-agent-chat-input-shell",
+        textArea: "geo-agent-chat-textarea",
+        disclaimer: "geo-agent-chat-disclaimer",
+        sendButton: "geo-agent-chat-send",
+        addMenuButton: "geo-agent-chat-add",
+      },
+      messageView: {
+        className: "geo-agent-message-view",
+        assistantMessage: {
+          className: "geo-agent-assistant-message",
+          toolbar: "geo-agent-assistant-toolbar",
+        },
+        userMessage: {
+          className: "geo-agent-user-message",
+          messageRenderer: "geo-agent-user-bubble",
+          toolbar: "geo-agent-user-toolbar",
+        },
+      },
+    }),
+    []
+  );
+
   const handleStarterPrompt = useCallback(
     async (message: string) => {
       if (isSubmittingStarter) return;
@@ -159,59 +184,57 @@ export default function GeoAgentPanel({
 
   return (
     <CopilotChatConfigurationProvider agentId={GEO_AGENT_ID}>
-      <Card className="h-full p-0 overflow-hidden">
-        <div className="border-b border-zinc-200 dark:border-zinc-800 px-5 py-4">
+      <div className="geo-agent-panel flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
+        <div className="border-b border-zinc-200/70 px-4 py-4 dark:border-zinc-800/80 sm:px-5">
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
+            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
               <Bot className="h-4 w-4" />
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            <div className="min-w-0 flex-1">
+              <div className="geo-agent-title-row flex flex-wrap items-center gap-2">
+                <h3 className="text-base font-semibold tracking-[-0.02em] text-zinc-900 dark:text-zinc-100">
                   {t("geo.agentCopilotTitle")}
                 </h3>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
                   <Sparkles className="h-3 w-3" />
                   CopilotKit
                 </span>
               </div>
-              <p className="mt-1 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+              <p className="mt-2 max-w-[38ch] text-sm leading-6 text-zinc-600 dark:text-zinc-400">
                 {t("geo.agentCopilotSubtitle")}
               </p>
-              <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                {t("geo.agentCopilotHint")}
-              </p>
+              <div className="geo-agent-context mt-3 rounded-[20px] border border-zinc-200/80 bg-white/80 px-3 py-3 text-xs text-zinc-500 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.28)] backdrop-blur dark:border-zinc-800/80 dark:bg-zinc-950/70 dark:text-zinc-400">
+                <span className="font-medium uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
+                  {locale === "zh" ? "当前上下文" : "Current context"}
+                </span>
+                <span className="min-w-0 text-sm font-medium leading-5 text-zinc-700 dark:text-zinc-200">
+                  {selectedProduct.title}
+                </span>
+              </div>
             </div>
           </div>
+          <p className="mt-3 max-w-[42ch] text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+            {t("geo.agentCopilotHint")}
+          </p>
         </div>
 
-        <div className="px-5 pt-3">
-          <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/70 px-3 py-2.5 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-400">
-            <span className="font-medium text-zinc-700 dark:text-zinc-300">
-              {locale === "zh" ? "当前上下文" : "Current context"}
-            </span>
-            <span className="mx-2 text-zinc-300 dark:text-zinc-700">•</span>
-            {selectedProduct.title}
-          </div>
-        </div>
-
-        <div className="px-5 pt-3">
-          <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-1">
+        <div className="px-4 pb-4 pt-4 sm:px-5">
+          <div className="geo-agent-starters grid auto-rows-fr gap-3">
             {suggestions.map((suggestion) => (
               <button
                 key={suggestion.title}
                 type="button"
                 disabled={isSubmittingStarter}
                 onClick={() => handleStarterPrompt(suggestion.message)}
-                className="flex min-h-[168px] w-[220px] shrink-0 snap-start flex-col rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-left transition-colors hover:border-blue-300 hover:bg-blue-50/60 disabled:cursor-wait disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10"
+                className="group flex min-h-[152px] flex-col rounded-[22px] border border-zinc-200/80 bg-white/92 px-3.5 py-3.5 text-left shadow-[0_18px_44px_-36px_rgba(15,23,42,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50/75 hover:shadow-[0_24px_50px_-34px_rgba(37,99,235,0.35)] disabled:cursor-wait disabled:opacity-60 dark:border-zinc-800/80 dark:bg-zinc-950/80 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10"
               >
-                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400 dark:text-zinc-500">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-400 transition-colors group-hover:text-blue-500 dark:text-zinc-500 dark:group-hover:text-blue-400">
                   {locale === "zh" ? "示例问题" : "Starter"}
                 </div>
-                <div className="mt-2 text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                <div className="mt-3 text-sm font-semibold leading-5 text-zinc-900 dark:text-zinc-100">
                   {suggestion.title}
                 </div>
-                <div className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                <div className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
                   {suggestion.message}
                 </div>
               </button>
@@ -219,23 +242,29 @@ export default function GeoAgentPanel({
           </div>
         </div>
 
-        <div className="px-5 pb-5 pt-3">
-          <CopilotChat
-            agentId={GEO_AGENT_ID}
-            labels={{
-              welcomeMessageText:
-                locale === "zh"
-                  ? "问我类目指标、当前商品表现，或 GEO 与 SEO 的差异。"
-                  : "Ask for category metrics, product breakdowns, or GEO vs SEO deltas.",
-              chatInputPlaceholder:
-                locale === "zh"
-                  ? "例如：比较电子产品和户外运动的 discoverability"
-                  : "For example: Compare discoverability across Electronics and Outdoor",
-            }}
-            className="h-[560px] rounded-[22px] border border-zinc-200/80 bg-white dark:border-zinc-800/80 dark:bg-zinc-950 md:h-[680px]"
-          />
+        <div className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-0 sm:px-5">
+          <div
+            data-sidebar-chat
+            className="geo-agent-chat-shell flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-[26px] border border-zinc-200/80 bg-white/92 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.4)] backdrop-blur dark:border-zinc-800/80 dark:bg-zinc-950/88"
+          >
+            <CopilotChat
+              agentId={GEO_AGENT_ID}
+              chatView={chatView}
+              labels={{
+                welcomeMessageText:
+                  locale === "zh"
+                    ? "问我 GEO 指标、商品表现或类目对比。"
+                    : "Ask about GEO metrics, product performance, or category deltas.",
+                chatInputPlaceholder:
+                  locale === "zh"
+                    ? "例如：对比电子与户外类目的 discoverability"
+                    : "For example: Compare Electronics vs Outdoor discoverability",
+              }}
+              className="geo-agent-chat flex h-full min-h-0 flex-1 bg-transparent"
+            />
+          </div>
         </div>
-      </Card>
+      </div>
     </CopilotChatConfigurationProvider>
   );
 }
@@ -318,18 +347,18 @@ function GeoAgentChartCard({
       : "High to low";
 
   return (
-    <div className="overflow-hidden rounded-[22px] border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+    <div className="overflow-hidden rounded-[24px] border border-zinc-200/90 bg-white/95 shadow-[0_20px_48px_-36px_rgba(15,23,42,0.35)] dark:border-zinc-800/90 dark:bg-zinc-950/90">
       <div className="border-b border-zinc-200 px-4 py-4 dark:border-zinc-800">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h4 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            <h4 className="text-sm font-semibold leading-6 text-zinc-900 dark:text-zinc-100">
               {title}
             </h4>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
               {description}
             </p>
           </div>
-          <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+          <span className="shrink-0 rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
             {metricLabel}
           </span>
         </div>
@@ -367,7 +396,7 @@ function GeoAgentChartCard({
         </div>
 
         {activeDatum && (
-          <div className="mt-4 rounded-2xl bg-blue-50 px-3 py-3 dark:bg-blue-500/8">
+          <div className="mt-4 rounded-[18px] border border-blue-200/70 bg-blue-50/80 px-3 py-3 dark:border-blue-500/20 dark:bg-blue-500/8">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
               <div className="font-medium text-blue-700 dark:text-blue-300">
                 {activeDatum.label}
@@ -405,7 +434,7 @@ function GeoAgentChartCard({
               tabIndex={0}
               onMouseEnter={() => setActiveDatumId(item.id)}
               onFocus={() => setActiveDatumId(item.id)}
-              className={`rounded-2xl border px-3 py-3 transition-colors ${
+              className={`rounded-[18px] border px-3 py-3 transition-colors ${
                 item.id === activeDatumId
                   ? "border-blue-300 bg-blue-50/70 dark:border-blue-500/40 dark:bg-blue-500/6"
                   : "border-zinc-200 bg-zinc-50/80 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/70 dark:hover:border-zinc-700"
@@ -413,11 +442,11 @@ function GeoAgentChartCard({
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                  <div className="text-sm font-medium leading-5 break-words text-zinc-800 dark:text-zinc-200">
                     {item.label}
                   </div>
                   {item.note && (
-                    <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                    <div className="mt-0.5 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
                       {item.note}
                     </div>
                   )}
@@ -480,7 +509,7 @@ function ToggleChip({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+      className={`max-w-full rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
         active
           ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
           : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-zinc-100"
@@ -504,9 +533,9 @@ function MetricBar({
 }) {
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
-        <span>{label}</span>
-        <span>{value}</span>
+      <div className="mb-1 flex items-center justify-between gap-3 text-[11px] text-zinc-500 dark:text-zinc-400">
+        <span className="truncate">{label}</span>
+        <span className="shrink-0">{value}</span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
         <div
