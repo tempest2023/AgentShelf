@@ -1,9 +1,15 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import {
+  useCallback,
+  useMemo,
+  useState,
+  type ComponentProps,
+} from "react";
 import {
   CopilotChat,
   CopilotChatConfigurationProvider,
+  CopilotChatView,
   useAgent,
   useAgentContext,
   useCopilotKit,
@@ -11,8 +17,7 @@ import {
   type ReactFrontendTool,
 } from "@copilotkit/react-core/v2";
 import { z } from "zod";
-import { Bot, Sparkles } from "lucide-react";
-import type { Product } from "@/lib/types";
+import type { Category, Product } from "@/lib/types";
 import type { GeoChartPayload, GeoChartUnit } from "@/lib/geo-analytics";
 import { useLanguage } from "@/lib/i18n/context";
 import { useAuth } from "@/lib/auth/context";
@@ -41,6 +46,50 @@ const geoChartSchema = z.object({
 
 const GEO_AGENT_ID = "geo_dashboard_agent";
 
+const GEO_PLACEHOLDER_QUESTIONS: Record<
+  "en" | "zh",
+  Record<Category, string>
+> = {
+  en: {
+    electronics:
+      'For TechNova, what GEO signal is missing for "wireless earbuds for commuting"?',
+    outdoor:
+      'For Summit Trail, how does this SKU compare on "waterproof hiking backpack"?',
+    pets:
+      'For Paws & Whiskers, what schema or FAQ signal is missing for "interactive cat toys"?',
+    health:
+      'For VitalLife, how much GEO traffic uplift could "omega 3 supplement benefits" unlock?',
+  },
+  zh: {
+    electronics: '锐科电子在“通勤降噪耳机”下还缺哪项 GEO 信号？',
+    outdoor: '峰行户外这款商品在“防水徒步背包”下表现如何？',
+    pets: '萌宠天地在“室内猫互动玩具”下缺少哪项 schema 或 FAQ？',
+    health: '维他生活在“omega 3 补剂功效”下还能提升多少 GEO 流量？',
+  },
+};
+
+const GEO_STARTER_CATEGORY_LABELS: Record<
+  "en" | "zh",
+  Record<Category, string>
+> = {
+  en: {
+    electronics: "Electronics",
+    outdoor: "Outdoor & Sports",
+    pets: "Pet Supplies",
+    health: "Health & Supplements",
+  },
+  zh: {
+    electronics: "电子产品",
+    outdoor: "户外运动",
+    pets: "宠物用品",
+    health: "保健品",
+  },
+};
+
+type GeoAgentWelcomeScreenProps = ComponentProps<
+  typeof CopilotChatView.WelcomeScreen
+>;
+
 export default function GeoAgentPanel({
   selectedProduct,
 }: {
@@ -49,7 +98,7 @@ export default function GeoAgentPanel({
   const { agent } = useAgent({ agentId: GEO_AGENT_ID });
   const { copilotkit } = useCopilotKit();
   const { user } = useAuth();
-  const { locale, t } = useLanguage();
+  const { locale } = useLanguage();
   const [isSubmittingStarter, setIsSubmittingStarter] = useState(false);
 
   useAgentContext({
@@ -76,46 +125,108 @@ export default function GeoAgentPanel({
     },
   });
 
+  const activeCategory = user?.category ?? selectedProduct.category;
+
   const suggestions = useMemo(
-    () =>
-      locale === "zh"
+    () => {
+      const categoryLabel =
+        locale === "zh"
+          ? GEO_STARTER_CATEGORY_LABELS.zh[activeCategory]
+          : GEO_STARTER_CATEGORY_LABELS.en[activeCategory];
+
+      return locale === "zh"
         ? [
             {
-              title: "看当前商品",
-              message: "展示当前商品的 GEO readiness 图表，并指出最弱分项。",
+              message: "当前商品最弱的 GEO 维度是什么？",
             },
             {
-              title: "比较类目分数",
-              message: "比较电子产品和户外运动类目的 discoverability，并生成对比图。",
+              message: `${categoryLabel}类目里，哪些商品的可发现性最高？`,
             },
             {
-              title: "看流量提升",
-              message: "用图表展示健康品类在 GEO 优化后的预计流量提升。",
+              message: `${categoryLabel}类目在 GEO 优化后还有多少流量提升空间？`,
             },
           ]
         : [
             {
-              title: "Current product",
               message:
-                "Show the GEO readiness chart for the current product and identify the weakest dimension.",
+                "Which GEO dimension is weakest for the current product?",
             },
             {
-              title: "Compare categories",
-              message:
-                "Compare discoverability across Electronics and Outdoor & Sports in a chart.",
+              message: `Within ${categoryLabel}, which products lead on discoverability?`,
             },
             {
-              title: "Traffic uplift",
-              message:
-                "Chart the expected traffic uplift for Health & Supplements after GEO optimization.",
+              message: `How much traffic uplift is available in ${categoryLabel} after GEO optimization?`,
             },
-          ],
-    [locale]
+          ];
+    },
+    [activeCategory, locale]
   );
+
+  const chatInputPlaceholder = useMemo(() => {
+    return locale === "zh"
+      ? GEO_PLACEHOLDER_QUESTIONS.zh[activeCategory]
+      : GEO_PLACEHOLDER_QUESTIONS.en[activeCategory];
+  }, [activeCategory, locale]);
+
+  const handleStarterPrompt = useCallback(
+    async (message: string) => {
+      if (isSubmittingStarter) return;
+
+      setIsSubmittingStarter(true);
+      agent.addMessage({
+        id: crypto.randomUUID(),
+        role: "user",
+        content: message,
+      });
+
+      try {
+        await copilotkit.runAgent({ agent });
+      } finally {
+        setIsSubmittingStarter(false);
+      }
+    },
+    [agent, copilotkit, isSubmittingStarter]
+  );
+
+  const welcomeScreen = useMemo(() => {
+    function GeoAgentWelcomeScreen({
+      input,
+      className,
+    }: GeoAgentWelcomeScreenProps) {
+      return (
+        <div className={`geo-agent-welcome-screen${className ? ` ${className}` : ""}`}>
+          <div className="geo-agent-welcome-stack">
+            <div
+              className="geo-agent-starter-pills"
+              aria-label={locale === "zh" ? "示例问题" : "Starter prompts"}
+            >
+              {suggestions.map((suggestion) => (
+                <button
+                  key={suggestion.message}
+                  type="button"
+                  disabled={isSubmittingStarter}
+                  onClick={() => handleStarterPrompt(suggestion.message)}
+                  aria-label={suggestion.message}
+                  className="geo-agent-starter-pill"
+                >
+                  <span className="geo-agent-starter-pill-question">
+                    {suggestion.message}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="geo-agent-welcome-input">{input}</div>
+          </div>
+        </div>
+      );
+    }
+
+    return GeoAgentWelcomeScreen;
+  }, [handleStarterPrompt, isSubmittingStarter, locale, suggestions]);
 
   const chatView = useMemo(
     () => ({
-      welcomeScreen: false,
+      welcomeScreen,
       input: {
         className: "geo-agent-chat-input-shell",
         textArea: "geo-agent-chat-textarea",
@@ -136,27 +247,7 @@ export default function GeoAgentPanel({
         },
       },
     }),
-    []
-  );
-
-  const handleStarterPrompt = useCallback(
-    async (message: string) => {
-      if (isSubmittingStarter) return;
-
-      setIsSubmittingStarter(true);
-      agent.addMessage({
-        id: crypto.randomUUID(),
-        role: "user",
-        content: message,
-      });
-
-      try {
-        await copilotkit.runAgent({ agent });
-      } finally {
-        setIsSubmittingStarter(false);
-      }
-    },
-    [agent, copilotkit, isSubmittingStarter]
+    [welcomeScreen]
   );
 
   const geoChartTool: ReactFrontendTool<GeoChartPayload> = {
@@ -184,85 +275,29 @@ export default function GeoAgentPanel({
 
   return (
     <CopilotChatConfigurationProvider agentId={GEO_AGENT_ID}>
-      <div className="geo-agent-panel flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
-        <div className="border-b border-zinc-200/70 px-4 py-4 dark:border-zinc-800/80 sm:px-5">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
-              <Bot className="h-4 w-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="geo-agent-title-row flex flex-wrap items-center gap-2">
-                <h3 className="text-base font-semibold tracking-[-0.02em] text-zinc-900 dark:text-zinc-100">
-                  {t("geo.agentCopilotTitle")}
-                </h3>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
-                  <Sparkles className="h-3 w-3" />
-                  CopilotKit
-                </span>
-              </div>
-              <p className="mt-2 max-w-[38ch] text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                {t("geo.agentCopilotSubtitle")}
-              </p>
-              <div className="geo-agent-context mt-3 rounded-[20px] border border-zinc-200/80 bg-white/80 px-3 py-3 text-xs text-zinc-500 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.28)] backdrop-blur dark:border-zinc-800/80 dark:bg-zinc-950/70 dark:text-zinc-400">
-                <span className="font-medium uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
-                  {locale === "zh" ? "当前上下文" : "Current context"}
-                </span>
-                <span className="min-w-0 text-sm font-medium leading-5 text-zinc-700 dark:text-zinc-200">
-                  {selectedProduct.title}
-                </span>
-              </div>
-            </div>
-          </div>
-          <p className="mt-3 max-w-[42ch] text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-            {t("geo.agentCopilotHint")}
-          </p>
-        </div>
-
-        <div className="px-4 pb-4 pt-4 sm:px-5">
-          <div className="geo-agent-starters grid auto-rows-fr gap-3">
-            {suggestions.map((suggestion) => (
-              <button
-                key={suggestion.title}
-                type="button"
-                disabled={isSubmittingStarter}
-                onClick={() => handleStarterPrompt(suggestion.message)}
-                className="group flex min-h-[152px] flex-col rounded-[22px] border border-zinc-200/80 bg-white/92 px-3.5 py-3.5 text-left shadow-[0_18px_44px_-36px_rgba(15,23,42,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50/75 hover:shadow-[0_24px_50px_-34px_rgba(37,99,235,0.35)] disabled:cursor-wait disabled:opacity-60 dark:border-zinc-800/80 dark:bg-zinc-950/80 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10"
-              >
-                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-400 transition-colors group-hover:text-blue-500 dark:text-zinc-500 dark:group-hover:text-blue-400">
-                  {locale === "zh" ? "示例问题" : "Starter"}
-                </div>
-                <div className="mt-3 text-sm font-semibold leading-5 text-zinc-900 dark:text-zinc-100">
-                  {suggestion.title}
-                </div>
-                <div className="mt-2 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
-                  {suggestion.message}
-                </div>
-              </button>
-            ))}
+      <div className="geo-agent-panel flex h-full min-h-0 w-full flex-1 flex-col overflow-y-auto overscroll-contain">
+        <div className="geo-agent-compact-header border-b border-zinc-200/70 px-4 py-3 dark:border-zinc-800/80">
+          <div className="geo-agent-context-bar">
+            <span className="geo-agent-context-label">
+              {locale === "zh" ? "当前商品" : "Current product"}
+            </span>
+            <span className="geo-agent-context-value">{selectedProduct.title}</span>
           </div>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-0 sm:px-5">
-          <div
-            data-sidebar-chat
-            className="geo-agent-chat-shell flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-[26px] border border-zinc-200/80 bg-white/92 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.4)] backdrop-blur dark:border-zinc-800/80 dark:bg-zinc-950/88"
-          >
-            <CopilotChat
-              agentId={GEO_AGENT_ID}
-              chatView={chatView}
-              labels={{
-                welcomeMessageText:
-                  locale === "zh"
-                    ? "问我 GEO 指标、商品表现或类目对比。"
-                    : "Ask about GEO metrics, product performance, or category deltas.",
-                chatInputPlaceholder:
-                  locale === "zh"
-                    ? "例如：对比电子与户外类目的 discoverability"
-                    : "For example: Compare Electronics vs Outdoor discoverability",
-              }}
-              className="geo-agent-chat flex h-full min-h-0 flex-1 bg-transparent"
-            />
-          </div>
+        <div data-sidebar-chat className="geo-agent-chat-shell flex min-h-0 w-full flex-1 flex-col">
+          <CopilotChat
+            agentId={GEO_AGENT_ID}
+            chatView={chatView}
+            labels={{
+              chatInputPlaceholder,
+              chatDisclaimerText:
+                locale === "zh"
+                  ? "AI 可能出错，请核对重要信息。"
+                  : "AI can make mistakes. Please verify important information.",
+            }}
+            className="geo-agent-chat flex h-full min-h-0 flex-1 bg-transparent"
+          />
         </div>
       </div>
     </CopilotChatConfigurationProvider>
