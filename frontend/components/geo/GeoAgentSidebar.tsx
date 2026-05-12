@@ -4,17 +4,25 @@ import { useEffect, useCallback } from "react";
 import { Bot, X } from "lucide-react";
 import type { Product } from "@/lib/types";
 import GeoAgentPanel from "./GeoAgentPanel";
+import type {
+  GeoGeneratedPanelReadyPayload,
+  GeoGeneratedPanelStartPayload,
+} from "@/lib/geo-generated-panel";
 
 interface GeoAgentSidebarProps {
   open: boolean;
   onToggle: () => void;
   selectedProduct: Product;
+  onGeneratedPanelStart: (payload: GeoGeneratedPanelStartPayload) => void;
+  onGeneratedPanelReady: (payload: GeoGeneratedPanelReadyPayload) => void;
 }
 
 export default function GeoAgentSidebar({
   open,
   onToggle,
   selectedProduct,
+  onGeneratedPanelStart,
+  onGeneratedPanelReady,
 }: GeoAgentSidebarProps) {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -35,14 +43,14 @@ export default function GeoAgentSidebar({
       {/* Overlay on small screens */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm xl:hidden"
+          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm min-[1180px]:hidden"
           onClick={onToggle}
         />
       )}
 
       {/* Sidebar panel */}
       <aside
-        className={`fixed right-0 top-0 z-50 flex h-full w-full flex-col border-l border-zinc-200 bg-white shadow-2xl shadow-zinc-900/10 transition-transform duration-300 ease-in-out dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-zinc-900/50 sm:w-[440px] ${
+        className={`fixed right-0 top-0 z-50 flex h-full w-full flex-col border-l border-zinc-200 bg-white shadow-2xl shadow-zinc-900/10 transition-transform duration-300 ease-in-out dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-zinc-900/50 sm:w-[440px] min-[1180px]:w-[420px] xl:w-[440px] ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -73,7 +81,12 @@ export default function GeoAgentSidebar({
 
         {/* Sidebar content */}
         <div className="flex min-h-0 w-full flex-1 items-stretch overflow-hidden bg-zinc-50/80 dark:bg-zinc-950">
-          <GeoAgentPanel key={selectedProduct.id} selectedProduct={selectedProduct} />
+          <GeoAgentPanel
+            key={selectedProduct.id}
+            selectedProduct={selectedProduct}
+            onGeneratedPanelStart={onGeneratedPanelStart}
+            onGeneratedPanelReady={onGeneratedPanelReady}
+          />
         </div>
       </aside>
 

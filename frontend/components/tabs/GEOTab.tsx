@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Search,
   AlertTriangle,
@@ -21,7 +21,9 @@ import type { TranslationKey } from "@/lib/i18n/translations";
 import Card, { CardHeader, CardTitle } from "@/components/Card";
 import ScoreRing from "@/components/ScoreRing";
 import Badge from "@/components/Badge";
+import GeoGeneratedInsightPanel from "@/components/geo/GeoGeneratedInsightPanel";
 import type { Category } from "@/lib/types";
+import type { GeoGeneratedPanelState } from "@/lib/geo-generated-panel";
 
 const suggestedQueries: Record<Category, string[]> = {
   electronics: [
@@ -50,14 +52,28 @@ const suggestedQueries: Record<Category, string[]> = {
   ],
 };
 
-export default function GEOTab({ product }: { product: Product }) {
+export default function GEOTab({
+  product,
+  generatedPanel,
+  onDismissGeneratedPanel,
+}: {
+  product: Product;
+  generatedPanel: GeoGeneratedPanelState | null;
+  onDismissGeneratedPanel: () => void;
+}) {
   const [query, setQuery] = useState("");
   const [simulation, setSimulation] = useState<QuerySimulation | null>(null);
   const [expandedFix, setExpandedFix] = useState<number | null>(null);
-  const [audit, setAudit] = useState<ProductAudit>(() => getAuditForProduct(product.id));
+  const baseAudit = useMemo(() => getAuditForProduct(product.id), [product.id]);
+  const [remoteAudit, setRemoteAudit] = useState<{
+    productId: string;
+    audit: ProductAudit;
+  } | null>(null);
   const [auditLoading, setAuditLoading] = useState(false);
   const [simulating, setSimulating] = useState(false);
   const { t } = useLanguage();
+  const audit =
+    remoteAudit?.productId === product.id ? remoteAudit.audit : baseAudit;
 
   const fetchAudit = useCallback(async (p: Product) => {
     setAuditLoading(true);
@@ -69,7 +85,10 @@ export default function GEOTab({ product }: { product: Product }) {
       });
       if (res.ok) {
         const data = await res.json();
-        setAudit(data);
+        setRemoteAudit({
+          productId: p.id,
+          audit: data,
+        });
       }
     } catch {
       // fallback already set
@@ -79,9 +98,12 @@ export default function GEOTab({ product }: { product: Product }) {
   }, []);
 
   useEffect(() => {
-    setAudit(getAuditForProduct(product.id));
-    fetchAudit(product);
-  }, [product.id, fetchAudit]);
+    const frame = window.requestAnimationFrame(() => {
+      fetchAudit(product);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [fetchAudit, product]);
 
   const handleSimulate = async (q?: string) => {
     const queryText = q ?? query;
@@ -183,6 +205,14 @@ export default function GEOTab({ product }: { product: Product }) {
               </div>
             </Card>
           </div>
+
+          {generatedPanel && (
+            <GeoGeneratedInsightPanel
+              key={generatedPanel.id}
+              panel={generatedPanel}
+              onClose={onDismissGeneratedPanel}
+            />
+          )}
 
           {/* Missing signals */}
           <Card>

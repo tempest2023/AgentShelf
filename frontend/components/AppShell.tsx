@@ -14,6 +14,11 @@ import { products } from "@/lib/mock";
 import { useAuth } from "@/lib/auth/context";
 import { useLanguage } from "@/lib/i18n/context";
 import type { Product } from "@/lib/types";
+import type {
+  GeoGeneratedPanelReadyPayload,
+  GeoGeneratedPanelStartPayload,
+  GeoGeneratedPanelState,
+} from "@/lib/geo-generated-panel";
 
 type ProductPublishState = "idle" | "publishing" | "done";
 
@@ -22,6 +27,9 @@ export default function AppShell() {
   const { t } = useLanguage();
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [agentSidebarOpen, setAgentSidebarOpen] = useState(false);
+  const [generatedPanels, setGeneratedPanels] = useState<
+    Record<string, GeoGeneratedPanelState | null>
+  >({});
 
   const storeProducts = useMemo(
     () => products.filter((p) => p.category === user?.category),
@@ -74,6 +82,54 @@ export default function AppShell() {
     logout();
   }, [logout]);
 
+  const handleGeneratedPanelStart = useCallback(
+    ({ productId, query, runId }: GeoGeneratedPanelStartPayload) => {
+      setGeneratedPanels((current) => ({
+        ...current,
+        [productId]: {
+          id: runId,
+          runId,
+          productId,
+          query,
+          status: "generating",
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      }));
+    },
+    []
+  );
+
+  const handleGeneratedPanelReady = useCallback(
+    ({ productId, query, runId, chart }: GeoGeneratedPanelReadyPayload) => {
+      setGeneratedPanels((current) => {
+        const previous = current[productId];
+
+        return {
+          ...current,
+          [productId]: {
+            id: previous?.id ?? runId,
+            runId,
+            productId,
+            query,
+            chart,
+            status: "ready",
+            createdAt: previous?.createdAt ?? Date.now(),
+            updatedAt: Date.now(),
+          },
+        };
+      });
+    },
+    []
+  );
+
+  const handleDismissGeneratedPanel = useCallback((productId: string) => {
+    setGeneratedPanels((current) => ({
+      ...current,
+      [productId]: null,
+    }));
+  }, []);
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <Header activeTab={activeTab} onTabChange={handleTabChange} onLogoutRequest={handleLogoutRequest} />
@@ -85,9 +141,23 @@ export default function AppShell() {
           activeTab={activeTab}
           onTabChange={handleTabChange}
         />
-        <main className="flex-1 overflow-y-auto">
+        <main
+          className={`flex-1 overflow-y-auto transition-[margin] duration-300 ease-in-out ${
+            activeTab === "geo" && agentSidebarOpen
+              ? "min-[1180px]:mr-[420px] xl:mr-[440px]"
+              : "min-[1180px]:mr-0 xl:mr-0"
+          }`}
+        >
           <div className="max-w-6xl p-4 sm:p-6">
-            {activeTab === "geo" && <GEOTab product={selectedProduct} />}
+            {activeTab === "geo" && (
+              <GEOTab
+                product={selectedProduct}
+                generatedPanel={generatedPanels[selectedProduct.id] ?? null}
+                onDismissGeneratedPanel={() =>
+                  handleDismissGeneratedPanel(selectedProduct.id)
+                }
+              />
+            )}
             {activeTab === "channels" && (
               <ChannelsTab product={selectedProduct} />
             )}
@@ -122,6 +192,8 @@ export default function AppShell() {
           open={agentSidebarOpen}
           onToggle={() => setAgentSidebarOpen((prev) => !prev)}
           selectedProduct={selectedProduct}
+          onGeneratedPanelStart={handleGeneratedPanelStart}
+          onGeneratedPanelReady={handleGeneratedPanelReady}
         />
       )}
     </div>
