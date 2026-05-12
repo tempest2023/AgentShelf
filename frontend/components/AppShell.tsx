@@ -16,6 +16,7 @@ import { useLanguage } from "@/lib/i18n/context";
 import type { Product } from "@/lib/types";
 import type {
   GeoGeneratedPanelReadyPayload,
+  GeoGeneratedPanelRenderingPayload,
   GeoGeneratedPanelStartPayload,
   GeoGeneratedPanelState,
 } from "@/lib/geo-generated-panel";
@@ -29,6 +30,9 @@ export default function AppShell() {
   const [agentSidebarOpen, setAgentSidebarOpen] = useState(false);
   const [generatedPanels, setGeneratedPanels] = useState<
     Record<string, GeoGeneratedPanelState | null>
+  >({});
+  const [agentUpdateNotices, setAgentUpdateNotices] = useState<
+    Record<string, { runId: string; title: string } | null>
   >({});
 
   const storeProducts = useMemo(
@@ -96,6 +100,10 @@ export default function AppShell() {
           updatedAt: Date.now(),
         },
       }));
+      setAgentUpdateNotices((current) => ({
+        ...current,
+        [productId]: null,
+      }));
     },
     []
   );
@@ -104,6 +112,14 @@ export default function AppShell() {
     ({ productId, query, runId, chart }: GeoGeneratedPanelReadyPayload) => {
       setGeneratedPanels((current) => {
         const previous = current[productId];
+
+        if (previous && previous.runId !== runId) {
+          return current;
+        }
+
+        if (previous?.runId === runId && previous.status === "ready") {
+          return current;
+        }
 
         return {
           ...current,
@@ -114,6 +130,44 @@ export default function AppShell() {
             query,
             chart,
             status: "ready",
+            createdAt: previous?.createdAt ?? Date.now(),
+            updatedAt: Date.now(),
+          },
+        };
+      });
+      setAgentUpdateNotices((current) => ({
+        ...current,
+        [productId]: {
+          runId,
+          title: chart.title,
+        },
+      }));
+    },
+    []
+  );
+
+  const handleGeneratedPanelRendering = useCallback(
+    ({ productId, query, runId, chart }: GeoGeneratedPanelRenderingPayload) => {
+      setGeneratedPanels((current) => {
+        const previous = current[productId];
+
+        if (previous && previous.runId !== runId) {
+          return current;
+        }
+
+        if (previous?.runId === runId && previous.status === "rendering") {
+          return current;
+        }
+
+        return {
+          ...current,
+          [productId]: {
+            id: previous?.id ?? runId,
+            runId,
+            productId,
+            query,
+            chart,
+            status: "rendering",
             createdAt: previous?.createdAt ?? Date.now(),
             updatedAt: Date.now(),
           },
@@ -192,7 +246,9 @@ export default function AppShell() {
           open={agentSidebarOpen}
           onToggle={() => setAgentSidebarOpen((prev) => !prev)}
           selectedProduct={selectedProduct}
+          latestDashboardUpdate={agentUpdateNotices[selectedProduct.id] ?? null}
           onGeneratedPanelStart={handleGeneratedPanelStart}
+          onGeneratedPanelRendering={handleGeneratedPanelRendering}
           onGeneratedPanelReady={handleGeneratedPanelReady}
         />
       )}

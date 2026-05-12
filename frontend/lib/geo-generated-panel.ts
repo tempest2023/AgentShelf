@@ -2,7 +2,7 @@
 
 import type { GeoChartPayload } from "@/lib/geo-analytics";
 
-export type GeoGeneratedPanelStatus = "generating" | "ready";
+export type GeoGeneratedPanelStatus = "generating" | "rendering" | "ready";
 
 export interface GeoGeneratedPanelState {
   id: string;
@@ -21,7 +21,9 @@ export interface GeoGeneratedPanelStartPayload {
   runId: string;
 }
 
-export interface GeoGeneratedPanelReadyPayload
+export interface GeoGeneratedPanelRenderingPayload
   extends GeoGeneratedPanelStartPayload {
   chart: GeoChartPayload;
 }
+
+export type GeoGeneratedPanelReadyPayload = GeoGeneratedPanelRenderingPayload;

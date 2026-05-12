@@ -170,6 +170,39 @@ body {
   animation: import-spin 1s linear infinite;
 }
 
+@keyframes geo-dashboard-scan {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.geo-dashboard-scan {
+  background-size: 200% 100%;
+  animation: geo-dashboard-scan 1.35s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes geo-dashboard-orbit {
+  0% {
+    transform: rotate(0deg) scale(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: rotate(180deg) scale(1.04);
+    opacity: 0.92;
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    opacity: 0.45;
+  }
+}
+
+.geo-dashboard-orbit {
+  animation: geo-dashboard-orbit 2.6s linear infinite;
+}
+
 .geo-agent-panel {
   container-type: inline-size;
   scrollbar-gutter: stable;
@@ -217,6 +250,21 @@ body {
 
 .dark .geo-agent-context-value {
   color: rgb(244 244 245);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .score-ring,
+  .animate-fade-in-up,
+  .stagger-children > *,
+  .import-progress-bar,
+  .import-pulse,
+  .import-check,
+  .import-slide,
+  .import-spin,
+  .geo-dashboard-scan,
+  .geo-dashboard-orbit {
+    animation: none !important;
+  }
 }
 
 .geo-agent-chat-shell {

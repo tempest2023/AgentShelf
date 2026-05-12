@@ -6,6 +6,7 @@ import type { Product } from "@/lib/types";
 import GeoAgentPanel from "./GeoAgentPanel";
 import type {
   GeoGeneratedPanelReadyPayload,
+  GeoGeneratedPanelRenderingPayload,
   GeoGeneratedPanelStartPayload,
 } from "@/lib/geo-generated-panel";
 
@@ -13,7 +14,11 @@ interface GeoAgentSidebarProps {
   open: boolean;
   onToggle: () => void;
   selectedProduct: Product;
+  latestDashboardUpdate: { runId: string; title: string } | null;
   onGeneratedPanelStart: (payload: GeoGeneratedPanelStartPayload) => void;
+  onGeneratedPanelRendering: (
+    payload: GeoGeneratedPanelRenderingPayload
+  ) => void;
   onGeneratedPanelReady: (payload: GeoGeneratedPanelReadyPayload) => void;
 }
 
@@ -21,7 +26,9 @@ export default function GeoAgentSidebar({
   open,
   onToggle,
   selectedProduct,
+  latestDashboardUpdate,
   onGeneratedPanelStart,
+  onGeneratedPanelRendering,
   onGeneratedPanelReady,
 }: GeoAgentSidebarProps) {
   const handleKeyDown = useCallback(
@@ -43,14 +50,14 @@ export default function GeoAgentSidebar({
       {/* Overlay on small screens */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm min-[1180px]:hidden"
+          className="fixed inset-0 z-40 bg-zinc-950/8 min-[1180px]:hidden"
           onClick={onToggle}
         />
       )}
 
       {/* Sidebar panel */}
       <aside
-        className={`fixed right-0 top-0 z-50 flex h-full w-full flex-col border-l border-zinc-200 bg-white shadow-2xl shadow-zinc-900/10 transition-transform duration-300 ease-in-out dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-zinc-900/50 sm:w-[440px] min-[1180px]:w-[420px] xl:w-[440px] ${
+        className={`fixed right-0 top-0 z-50 flex h-full w-full flex-col border-l border-zinc-200 bg-white shadow-2xl shadow-zinc-900/10 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-zinc-900/50 sm:w-[440px] min-[1180px]:w-[420px] xl:w-[440px] ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -84,7 +91,9 @@ export default function GeoAgentSidebar({
           <GeoAgentPanel
             key={selectedProduct.id}
             selectedProduct={selectedProduct}
+            latestDashboardUpdate={latestDashboardUpdate}
             onGeneratedPanelStart={onGeneratedPanelStart}
+            onGeneratedPanelRendering={onGeneratedPanelRendering}
             onGeneratedPanelReady={onGeneratedPanelReady}
           />
         </div>

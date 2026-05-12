@@ -61,7 +61,7 @@ export default function GeoGeneratedInsightPanel({
 
   return (
     <div
-      className="overflow-hidden transition-[height,opacity,transform,margin] duration-300 ease-out"
+      className="overflow-hidden transition-[height,opacity,transform,margin] duration-300 ease-out motion-reduce:transition-none"
       style={{
         height: isClosing ? 0 : height,
         opacity: isClosing ? 0 : 1,
@@ -83,11 +83,19 @@ export default function GeoGeneratedInsightPanel({
                 ? locale === "zh"
                   ? "正在把问题编织成一个可操作的 GEO 页面"
                   : "Composing a live GEO page from your question"
+                : panel.status === "rendering"
+                  ? locale === "zh"
+                    ? "正在重新渲染 GEO Readiness Dashboard"
+                    : "Re-rendering the GEO Readiness Dashboard"
                 : panel.chart?.title}
             </h3>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
               {panel.status === "generating"
                 ? panel.query
+                : panel.status === "rendering"
+                  ? locale === "zh"
+                    ? "分析结果已经生成，当前正在主界面里播放插入与重绘过程。"
+                    : "The analysis is ready, and the main dashboard is now playing the insertion and re-render pass."
                 : panel.chart?.description || panel.query}
             </p>
           </div>
@@ -105,11 +113,117 @@ export default function GeoGeneratedInsightPanel({
         <div className="px-5 py-5">
           {panel.status === "generating" || !panel.chart ? (
             <GeneratedLoadingBody query={panel.query} />
+          ) : panel.status === "rendering" ? (
+            <GeneratedRenderingBody chart={panel.chart} query={panel.query} />
           ) : (
             <GeneratedReadyBody chart={panel.chart} query={panel.query} />
           )}
         </div>
       </section>
+    </div>
+  );
+}
+
+function GeneratedRenderingBody({
+  chart,
+  query,
+}: {
+  chart: GeoChartPayload;
+  query: string;
+}) {
+  const { locale } = useLanguage();
+  const previewRows = chart.data.slice(0, 4);
+  const maxValue = Math.max(1, ...chart.data.map((item) => item.primaryValue));
+
+  return (
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]">
+      <div className="relative overflow-hidden rounded-[28px] border border-emerald-200/80 bg-[radial-gradient(circle_at_top_left,_rgba(220,252,231,0.96),_rgba(240,249,255,0.94)_42%,_rgba(255,255,255,0.98)_100%)] p-6 dark:border-emerald-500/20 dark:bg-[radial-gradient(circle_at_top_left,_rgba(6,95,70,0.30),_rgba(12,18,28,0.94)_42%,_rgba(9,9,11,0.98)_100%)]">
+        <div className="absolute -right-6 top-5 h-28 w-28 rounded-full border border-emerald-200/80 bg-white/28 motion-safe:animate-pulse motion-reduce:animate-none dark:border-emerald-400/20 dark:bg-emerald-400/8" />
+        <div className="geo-dashboard-orbit absolute right-8 top-8 h-24 w-24 rounded-full border border-emerald-300/70 motion-reduce:animate-none dark:border-emerald-400/24" />
+        <div className="relative">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/78 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700 shadow-sm dark:bg-zinc-950/50 dark:text-emerald-300">
+            <Activity className="h-3.5 w-3.5" />
+            {locale === "zh" ? "重新渲染中" : "Re-rendering"}
+          </div>
+          <h4 className="mt-4 text-[1.65rem] font-semibold leading-tight tracking-[-0.045em] text-slate-900 dark:text-white">
+            {locale === "zh"
+              ? "把生成结果插入 GEO Readiness Dashboard，并让变化在主界面里被看见。"
+              : "Inserting the generated result into the GEO Readiness Dashboard so the UI update stays visible."}
+          </h4>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600 dark:text-emerald-50/80">
+            {query}
+          </p>
+        </div>
+
+        <div className="relative mt-5 space-y-3">
+          {[
+            locale === "zh" ? "锁定目标面板位置" : "Locking the panel insertion point",
+            locale === "zh" ? "同步 GEO 结果结构与指标" : "Syncing GEO result structure and metrics",
+            locale === "zh" ? "执行界面重绘并准备完成提示" : "Repainting the interface and preparing the completion reply",
+          ].map((step, index) => (
+            <div
+              key={step}
+              className="rounded-[20px] border border-white/60 bg-white/70 px-4 py-3 shadow-sm dark:border-white/5 dark:bg-zinc-950/36"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-medium text-slate-800 dark:text-zinc-100">
+                  {step}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 motion-safe:animate-pulse motion-reduce:animate-none" />
+                  <span className="text-[11px] uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-400">
+                    0{index + 1}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-[28px] border border-zinc-200/80 bg-zinc-50/80 p-5 dark:border-zinc-800 dark:bg-zinc-900/72">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <RenderStageMetric
+            label={locale === "zh" ? "目标视图" : "Target view"}
+            value={locale === "zh" ? "GEO 面板" : "GEO panel"}
+          />
+          <RenderStageMetric
+            label={locale === "zh" ? "当前系列" : "Primary series"}
+            value={chart.primarySeriesLabel}
+          />
+          <RenderStageMetric
+            label={locale === "zh" ? "样本数量" : "Rows"}
+            value={`${chart.data.length}`}
+          />
+        </div>
+
+        <div className="mt-4 space-y-3">
+          {previewRows.map((item, index) => (
+            <div
+              key={item.id}
+              className="rounded-[20px] border border-zinc-200/80 bg-white/90 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/78"
+            >
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="min-w-0 truncate font-medium text-zinc-800 dark:text-zinc-100">
+                  {item.label}
+                </span>
+                <span className="shrink-0 text-zinc-500 dark:text-zinc-400">
+                  {formatChartValue(item.primaryValue, chart.unit, locale)}
+                </span>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-800">
+                <div
+                  className="geo-dashboard-scan h-full rounded-full bg-[linear-gradient(90deg,rgba(16,185,129,0.82),rgba(45,212,191,0.92),rgba(59,130,246,0.82))] motion-reduce:animate-none"
+                  style={{
+                    width: `${Math.max((item.primaryValue / maxValue) * 100, 10)}%`,
+                    animationDelay: `${index * 120}ms`,
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -120,8 +234,8 @@ function GeneratedLoadingBody({ query }: { query: string }) {
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
       <div className="relative overflow-hidden rounded-[28px] border border-sky-200/80 bg-[radial-gradient(circle_at_top_left,_rgba(186,230,253,0.95),_rgba(240,249,255,0.92)_42%,_rgba(236,253,245,0.92)_100%)] p-6 dark:border-sky-500/20 dark:bg-[radial-gradient(circle_at_top_left,_rgba(14,116,144,0.32),_rgba(12,18,28,0.94)_42%,_rgba(6,95,70,0.22)_100%)]">
-        <div className="absolute -right-6 top-6 h-28 w-28 rounded-full border border-sky-300/70 bg-white/30 animate-pulse dark:border-sky-400/20 dark:bg-sky-400/10" />
-        <div className="absolute right-10 top-10 h-20 w-20 rounded-full border border-sky-400/60 animate-spin dark:border-sky-300/30" style={{ animationDuration: "10s" }} />
+        <div className="absolute -right-6 top-6 h-28 w-28 rounded-full border border-sky-300/70 bg-white/30 motion-safe:animate-pulse motion-reduce:animate-none dark:border-sky-400/20 dark:bg-sky-400/10" />
+        <div className="absolute right-10 top-10 h-20 w-20 rounded-full border border-sky-400/60 motion-safe:animate-spin motion-reduce:animate-none dark:border-sky-300/30" style={{ animationDuration: "10s" }} />
         <div className="relative">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-700 shadow-sm dark:bg-zinc-950/50 dark:text-sky-300">
             <Radar className="h-3.5 w-3.5" />
@@ -153,7 +267,7 @@ function GeneratedLoadingBody({ query }: { query: string }) {
                 {step}
               </div>
               <Sparkles
-                className="h-4 w-4 animate-pulse text-sky-500 dark:text-sky-300"
+                className="h-4 w-4 text-sky-500 motion-safe:animate-pulse motion-reduce:animate-none dark:text-sky-300"
                 style={{ animationDelay: `${index * 140}ms` }}
               />
             </div>
@@ -689,9 +803,31 @@ function MetricBar({
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
         <div
-          className={`h-full rounded-full ${color} transition-[width] duration-300`}
+          className={`h-full rounded-full ${color} transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none`}
           style={{ width: `${Math.max((value / maxValue) * 100, 6)}%` }}
         />
+      </div>
+    </div>
+  );
+}
+
+function RenderStageMetric({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-[20px] border border-zinc-200/80 bg-white/90 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-950/80">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400 dark:text-zinc-500">
+        {label}
+      </div>
+      <div className="mt-2 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        {value}
+      </div>
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-zinc-200/80 dark:bg-zinc-800">
+        <div className="geo-dashboard-scan h-full w-full rounded-full bg-[linear-gradient(90deg,rgba(59,130,246,0.72),rgba(52,211,153,0.88),rgba(59,130,246,0.72))] motion-reduce:animate-none" />
       </div>
     </div>
   );

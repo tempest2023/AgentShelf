@@ -25,6 +25,7 @@ import { useLanguage } from "@/lib/i18n/context";
 import { useAuth } from "@/lib/auth/context";
 import type {
   GeoGeneratedPanelReadyPayload,
+  GeoGeneratedPanelRenderingPayload,
   GeoGeneratedPanelStartPayload,
 } from "@/lib/geo-generated-panel";
 
@@ -51,6 +52,7 @@ const geoChartSchema = z.object({
 });
 
 const GEO_AGENT_ID = "geo_dashboard_agent";
+const DASHBOARD_RENDER_DELAY_MS = 1450;
 
 const GEO_PLACEHOLDER_QUESTIONS: Record<
   "en" | "zh",
@@ -98,11 +100,17 @@ type GeoAgentWelcomeScreenProps = ComponentProps<
 
 export default function GeoAgentPanel({
   selectedProduct,
+  latestDashboardUpdate,
   onGeneratedPanelStart,
+  onGeneratedPanelRendering,
   onGeneratedPanelReady,
 }: {
   selectedProduct: Product;
+  latestDashboardUpdate: { runId: string; title: string } | null;
   onGeneratedPanelStart: (payload: GeoGeneratedPanelStartPayload) => void;
+  onGeneratedPanelRendering: (
+    payload: GeoGeneratedPanelRenderingPayload
+  ) => void;
   onGeneratedPanelReady: (payload: GeoGeneratedPanelReadyPayload) => void;
 }) {
   const { agent } = useAgent({ agentId: GEO_AGENT_ID });
@@ -110,8 +118,14 @@ export default function GeoAgentPanel({
   const { user } = useAuth();
   const { locale } = useLanguage();
   const [isSubmittingStarter, setIsSubmittingStarter] = useState(false);
+  const [dashboardSyncPhases, setDashboardSyncPhases] = useState<
+    Record<string, "rendering" | "ready">
+  >({});
   const pendingPromptRef = useRef("");
   const activeRunIdRef = useRef<string | null>(null);
+  const announcedRunIdsRef = useRef<Set<string>>(new Set());
+  const scheduledRunIdsRef = useRef<Set<string>>(new Set());
+  const syncTimersRef = useRef<Map<string, number>>(new Map());
 
   useAgentContext({
     description: "ui_locale",
@@ -185,6 +199,17 @@ export default function GeoAgentPanel({
     activeRunIdRef.current = null;
   }, [chatInputPlaceholder, selectedProduct.id]);
 
+  useEffect(() => {
+    const timers = syncTimersRef.current;
+
+    return () => {
+      for (const timer of timers.values()) {
+        window.clearTimeout(timer);
+      }
+      timers.clear();
+    };
+  }, []);
+
   const beginDashboardGeneration = useCallback(
     (message: string) => {
       const runId = crypto.randomUUID();
@@ -199,16 +224,59 @@ export default function GeoAgentPanel({
     [onGeneratedPanelStart, selectedProduct.id]
   );
 
-  const handleGeneratedChart = useCallback(
-    (chart: GeoChartPayload) => {
-      onGeneratedPanelReady({
-        productId: selectedProduct.id,
-        query: pendingPromptRef.current || chatInputPlaceholder,
-        runId: activeRunIdRef.current ?? crypto.randomUUID(),
-        chart,
+  const announceDashboardReady = useCallback(
+    (runId: string) => {
+      if (announcedRunIdsRef.current.has(runId)) return;
+      announcedRunIdsRef.current.add(runId);
+      agent.addMessage({
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content:
+          locale === "zh"
+            ? "GEO Readiness Dashboard 已更新。"
+            : "The GEO Readiness Dashboard has been updated.",
       });
     },
-    [chatInputPlaceholder, onGeneratedPanelReady, selectedProduct.id]
+    [agent, locale]
+  );
+
+  const requestDashboardSync = useCallback(
+    (payload: GeoGeneratedPanelRenderingPayload) => {
+      const { runId } = payload;
+
+      setDashboardSyncPhases((current) =>
+        current[runId]
+          ? current
+          : {
+              ...current,
+              [runId]: "rendering",
+            }
+      );
+
+      if (scheduledRunIdsRef.current.has(runId)) {
+        return;
+      }
+
+      scheduledRunIdsRef.current.add(runId);
+      onGeneratedPanelRendering(payload);
+
+      const timer = window.setTimeout(() => {
+        setDashboardSyncPhases((current) =>
+          current[runId] === "ready"
+            ? current
+            : {
+                ...current,
+                [runId]: "ready",
+              }
+        );
+        onGeneratedPanelReady(payload);
+        announceDashboardReady(runId);
+        syncTimersRef.current.delete(runId);
+      }, DASHBOARD_RENDER_DELAY_MS);
+
+      syncTimersRef.current.set(runId, timer);
+    },
+    [announceDashboardReady, onGeneratedPanelReady, onGeneratedPanelRendering]
   );
 
   const handleStarterPrompt = useCallback(
@@ -323,17 +391,29 @@ export default function GeoAgentPanel({
         );
       }
 
+      const currentRunId = activeRunIdRef.current ?? crypto.randomUUID();
+
       return (
         <GeoGeneratedToolNotice
           chart={parsed.data}
           locale={locale}
-          onGeneratedChart={handleGeneratedChart}
+          productId={selectedProduct.id}
+          query={pendingPromptRef.current || chatInputPlaceholder}
+          runId={currentRunId}
+          phase={dashboardSyncPhases[currentRunId] ?? "rendering"}
+          onSyncRequested={requestDashboardSync}
         />
       );
     },
   };
 
-  useFrontendTool(geoChartTool, [handleGeneratedChart, locale]);
+  useFrontendTool(geoChartTool, [
+    chatInputPlaceholder,
+    dashboardSyncPhases,
+    locale,
+    requestDashboardSync,
+    selectedProduct.id,
+  ]);
 
   return (
     <CopilotChatConfigurationProvider agentId={GEO_AGENT_ID}>
@@ -346,6 +426,15 @@ export default function GeoAgentPanel({
             <span className="geo-agent-context-value">{selectedProduct.title}</span>
           </div>
         </div>
+
+        {latestDashboardUpdate && (
+          <div className="px-4 pt-4">
+            <GeoAgentStatusReply
+              locale={locale}
+              title={latestDashboardUpdate.title}
+            />
+          </div>
+        )}
 
         <div data-sidebar-chat className="geo-agent-chat-shell flex min-h-0 w-full flex-1 flex-col">
           <CopilotChat
@@ -366,37 +455,162 @@ export default function GeoAgentPanel({
   );
 }
 
+function GeoAgentStatusReply({
+  locale,
+  title,
+}: {
+  locale: "en" | "zh";
+  title: string;
+}) {
+  return (
+    <div className="animate-fade-in-up rounded-[22px] border border-emerald-200/80 bg-emerald-50/85 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-100">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300">
+        {locale === "zh" ? "Agent 回复" : "Agent reply"}
+      </div>
+      <div className="mt-1 font-medium">
+        {locale === "zh"
+          ? "GEO Readiness Dashboard 已更新。"
+          : "The GEO Readiness Dashboard has been updated."}
+      </div>
+      <p className="mt-1 text-xs leading-5 text-emerald-700/80 dark:text-emerald-200/80">
+        {title}
+      </p>
+    </div>
+  );
+}
+
 function GeoGeneratedToolNotice({
   chart,
   locale,
-  onGeneratedChart,
+  productId,
+  query,
+  runId,
+  phase,
+  onSyncRequested,
 }: {
   chart: GeoChartPayload;
   locale: "en" | "zh";
-  onGeneratedChart: (chart: GeoChartPayload) => void;
+  productId: string;
+  query: string;
+  runId: string;
+  phase: "rendering" | "ready";
+  onSyncRequested: (payload: GeoGeneratedPanelRenderingPayload) => void;
 }) {
-  const signature = useMemo(() => JSON.stringify(chart), [chart]);
-  const reportedSignatureRef = useRef<string | null>(null);
-
   useEffect(() => {
-    if (reportedSignatureRef.current === signature) return;
-    reportedSignatureRef.current = signature;
-    onGeneratedChart(chart);
-  }, [chart, onGeneratedChart, signature]);
+    onSyncRequested({ productId, query, runId, chart });
+  }, [chart, onSyncRequested, productId, query, runId]);
+
+  const steps =
+    locale === "zh"
+      ? [
+          {
+            label: "图表数据已生成",
+            status: "done" as const,
+          },
+          {
+            label: "正在重新渲染 GEO Readiness Dashboard",
+            status: phase === "rendering" ? ("active" as const) : ("done" as const),
+          },
+          {
+            label: "完成后发送更新确认",
+            status: phase === "ready" ? ("done" as const) : ("pending" as const),
+          },
+        ]
+      : [
+          {
+            label: "Chart data generated",
+            status: "done" as const,
+          },
+          {
+            label: "Re-rendering the GEO Readiness Dashboard",
+            status: phase === "rendering" ? ("active" as const) : ("done" as const),
+          },
+          {
+            label: "Sending update confirmation",
+            status: phase === "ready" ? ("done" as const) : ("pending" as const),
+          },
+        ];
 
   return (
-    <div className="rounded-[22px] border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300">
-        {locale === "zh" ? "已插入 Dashboard" : "Inserted into dashboard"}
+    <div className="rounded-[22px] border border-sky-200/80 bg-[linear-gradient(180deg,rgba(240,249,255,0.98),rgba(236,253,245,0.94))] px-4 py-4 text-sm text-slate-800 dark:border-sky-500/20 dark:bg-[linear-gradient(180deg,rgba(12,18,28,0.96),rgba(6,95,70,0.16))] dark:text-sky-100">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-sky-300">
+        {phase === "rendering"
+          ? locale === "zh"
+            ? "正在同步 Dashboard"
+            : "Syncing dashboard"
+          : locale === "zh"
+            ? "Dashboard 已更新"
+            : "Dashboard updated"}
       </div>
-      <div className="mt-1 font-medium">
-        {chart.title}
+      <div className="mt-3 flex items-start gap-3">
+        <div className="relative mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-sky-200/80 bg-white/90 dark:border-sky-400/20 dark:bg-zinc-950/70">
+          <div className="geo-dashboard-orbit absolute inset-1 rounded-[14px] border border-sky-300/80 motion-reduce:animate-none dark:border-sky-400/30" />
+          <div
+            className={`h-2.5 w-2.5 rounded-full ${
+              phase === "rendering" ? "bg-sky-500" : "bg-emerald-500"
+            }`}
+          />
+        </div>
+        <div className="min-w-0">
+          <div className="font-medium text-slate-900 dark:text-white">
+            {phase === "rendering"
+              ? locale === "zh"
+                ? "正在播放生成后的重新渲染流程，让主界面可见地完成更新。"
+                : "Running a visible re-render pass so the dashboard update feels progressive."
+              : locale === "zh"
+                ? "GEO Readiness Dashboard 已更新。"
+                : "The GEO Readiness Dashboard has been updated."}
+          </div>
+          <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-sky-50/78">
+            {chart.title}
+          </p>
+        </div>
       </div>
-      <p className="mt-1 text-xs leading-5 text-emerald-700/80 dark:text-emerald-300/80">
-        {locale === "zh"
-          ? "主 Dashboard 中已经生成了一个可关闭的 GEO 结果 panel。"
-          : "A dismissible GEO result panel has been generated in the main dashboard."}
-      </p>
+
+      <div className="mt-4 overflow-hidden rounded-full bg-sky-100/90 dark:bg-sky-400/10">
+        <div
+          className={`geo-dashboard-scan h-2 rounded-full bg-[linear-gradient(90deg,rgba(14,165,233,0.82),rgba(45,212,191,0.96),rgba(52,211,153,0.86))] transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:animate-none motion-reduce:transition-none ${
+            phase === "ready" ? "" : "opacity-90"
+          }`}
+          style={{ width: phase === "ready" ? "100%" : "76%" }}
+        />
+      </div>
+
+      <div className="mt-4 space-y-2">
+        {steps.map((step) => (
+          <div
+            key={step.label}
+            className={`rounded-[18px] border px-3 py-2.5 ${
+              step.status === "done"
+                ? "border-emerald-200/80 bg-white/82 dark:border-emerald-400/20 dark:bg-zinc-950/60"
+                : step.status === "active"
+                  ? "border-sky-200/80 bg-white/88 dark:border-sky-400/20 dark:bg-zinc-950/70"
+                  : "border-zinc-200/80 bg-white/70 dark:border-zinc-800 dark:bg-zinc-950/40"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`h-2.5 w-2.5 rounded-full ${
+                  step.status === "done"
+                    ? "bg-emerald-500"
+                    : step.status === "active"
+                      ? "bg-sky-500 motion-safe:animate-pulse motion-reduce:animate-none"
+                      : "bg-zinc-300 dark:bg-zinc-700"
+                }`}
+              />
+              <span
+                className={`text-xs leading-5 ${
+                  step.status === "pending"
+                    ? "text-zinc-500 dark:text-zinc-400"
+                    : "text-slate-700 dark:text-zinc-200"
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
