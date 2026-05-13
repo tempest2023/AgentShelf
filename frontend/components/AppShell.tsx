@@ -14,6 +14,12 @@ import { products } from "@/lib/mock";
 import { useAuth } from "@/lib/auth/context";
 import { useLanguage } from "@/lib/i18n/context";
 import type { Product } from "@/lib/types";
+import type {
+  GeoGeneratedPanelReadyPayload,
+  GeoGeneratedPanelRenderingPayload,
+  GeoGeneratedPanelStartPayload,
+  GeoGeneratedPanelState,
+} from "@/lib/geo-generated-panel";
 
 type ProductPublishState = "idle" | "publishing" | "done";
 
@@ -22,6 +28,12 @@ export default function AppShell() {
   const { t } = useLanguage();
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [agentSidebarOpen, setAgentSidebarOpen] = useState(false);
+  const [generatedPanels, setGeneratedPanels] = useState<
+    Record<string, GeoGeneratedPanelState | null>
+  >({});
+  const [agentUpdateNotices, setAgentUpdateNotices] = useState<
+    Record<string, { runId: string; title: string } | null>
+  >({});
 
   const storeProducts = useMemo(
     () => products.filter((p) => p.category === user?.category),
@@ -74,6 +86,104 @@ export default function AppShell() {
     logout();
   }, [logout]);
 
+  const handleGeneratedPanelStart = useCallback(
+    ({ productId, query, runId }: GeoGeneratedPanelStartPayload) => {
+      setGeneratedPanels((current) => ({
+        ...current,
+        [productId]: {
+          id: runId,
+          runId,
+          productId,
+          query,
+          status: "generating",
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      }));
+      setAgentUpdateNotices((current) => ({
+        ...current,
+        [productId]: null,
+      }));
+    },
+    []
+  );
+
+  const handleGeneratedPanelReady = useCallback(
+    ({ productId, query, runId, chart }: GeoGeneratedPanelReadyPayload) => {
+      setGeneratedPanels((current) => {
+        const previous = current[productId];
+
+        if (previous && previous.runId !== runId) {
+          return current;
+        }
+
+        if (previous?.runId === runId && previous.status === "ready") {
+          return current;
+        }
+
+        return {
+          ...current,
+          [productId]: {
+            id: previous?.id ?? runId,
+            runId,
+            productId,
+            query,
+            chart,
+            status: "ready",
+            createdAt: previous?.createdAt ?? Date.now(),
+            updatedAt: Date.now(),
+          },
+        };
+      });
+      setAgentUpdateNotices((current) => ({
+        ...current,
+        [productId]: {
+          runId,
+          title: chart.title,
+        },
+      }));
+    },
+    []
+  );
+
+  const handleGeneratedPanelRendering = useCallback(
+    ({ productId, query, runId, chart }: GeoGeneratedPanelRenderingPayload) => {
+      setGeneratedPanels((current) => {
+        const previous = current[productId];
+
+        if (previous && previous.runId !== runId) {
+          return current;
+        }
+
+        if (previous?.runId === runId && previous.status === "rendering") {
+          return current;
+        }
+
+        return {
+          ...current,
+          [productId]: {
+            id: previous?.id ?? runId,
+            runId,
+            productId,
+            query,
+            chart,
+            status: "rendering",
+            createdAt: previous?.createdAt ?? Date.now(),
+            updatedAt: Date.now(),
+          },
+        };
+      });
+    },
+    []
+  );
+
+  const handleDismissGeneratedPanel = useCallback((productId: string) => {
+    setGeneratedPanels((current) => ({
+      ...current,
+      [productId]: null,
+    }));
+  }, []);
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <Header activeTab={activeTab} onTabChange={handleTabChange} onLogoutRequest={handleLogoutRequest} />
@@ -85,9 +195,23 @@ export default function AppShell() {
           activeTab={activeTab}
           onTabChange={handleTabChange}
         />
-        <main className="flex-1 overflow-y-auto">
+        <main
+          className={`flex-1 overflow-y-auto transition-[margin] duration-300 ease-in-out ${
+            activeTab === "geo" && agentSidebarOpen
+              ? "min-[1180px]:mr-[420px] xl:mr-[440px]"
+              : "min-[1180px]:mr-0 xl:mr-0"
+          }`}
+        >
           <div className="max-w-6xl p-4 sm:p-6">
-            {activeTab === "geo" && <GEOTab product={selectedProduct} />}
+            {activeTab === "geo" && (
+              <GEOTab
+                product={selectedProduct}
+                generatedPanel={generatedPanels[selectedProduct.id] ?? null}
+                onDismissGeneratedPanel={() =>
+                  handleDismissGeneratedPanel(selectedProduct.id)
+                }
+              />
+            )}
             {activeTab === "channels" && (
               <ChannelsTab product={selectedProduct} />
             )}
@@ -122,6 +246,10 @@ export default function AppShell() {
           open={agentSidebarOpen}
           onToggle={() => setAgentSidebarOpen((prev) => !prev)}
           selectedProduct={selectedProduct}
+          latestDashboardUpdate={agentUpdateNotices[selectedProduct.id] ?? null}
+          onGeneratedPanelStart={handleGeneratedPanelStart}
+          onGeneratedPanelRendering={handleGeneratedPanelRendering}
+          onGeneratedPanelReady={handleGeneratedPanelReady}
         />
       )}
     </div>

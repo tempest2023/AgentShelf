@@ -2,7 +2,9 @@
 
 import {
   useCallback,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ComponentProps,
 } from "react";
@@ -18,9 +20,14 @@ import {
 } from "@copilotkit/react-core/v2";
 import { z } from "zod";
 import type { Category, Product } from "@/lib/types";
-import type { GeoChartPayload, GeoChartUnit } from "@/lib/geo-analytics";
+import type { GeoChartPayload } from "@/lib/geo-analytics";
 import { useLanguage } from "@/lib/i18n/context";
 import { useAuth } from "@/lib/auth/context";
+import type {
+  GeoGeneratedPanelReadyPayload,
+  GeoGeneratedPanelRenderingPayload,
+  GeoGeneratedPanelStartPayload,
+} from "@/lib/geo-generated-panel";
 
 const geoChartSchema = z.object({
   title: z.string(),
@@ -45,6 +52,7 @@ const geoChartSchema = z.object({
 });
 
 const GEO_AGENT_ID = "geo_dashboard_agent";
+const DASHBOARD_RENDER_DELAY_MS = 1450;
 
 const GEO_PLACEHOLDER_QUESTIONS: Record<
   "en" | "zh",
@@ -92,14 +100,32 @@ type GeoAgentWelcomeScreenProps = ComponentProps<
 
 export default function GeoAgentPanel({
   selectedProduct,
+  latestDashboardUpdate,
+  onGeneratedPanelStart,
+  onGeneratedPanelRendering,
+  onGeneratedPanelReady,
 }: {
   selectedProduct: Product;
+  latestDashboardUpdate: { runId: string; title: string } | null;
+  onGeneratedPanelStart: (payload: GeoGeneratedPanelStartPayload) => void;
+  onGeneratedPanelRendering: (
+    payload: GeoGeneratedPanelRenderingPayload
+  ) => void;
+  onGeneratedPanelReady: (payload: GeoGeneratedPanelReadyPayload) => void;
 }) {
   const { agent } = useAgent({ agentId: GEO_AGENT_ID });
   const { copilotkit } = useCopilotKit();
   const { user } = useAuth();
   const { locale } = useLanguage();
   const [isSubmittingStarter, setIsSubmittingStarter] = useState(false);
+  const [dashboardSyncPhases, setDashboardSyncPhases] = useState<
+    Record<string, "rendering" | "ready">
+  >({});
+  const pendingPromptRef = useRef("");
+  const activeRunIdRef = useRef<string | null>(null);
+  const announcedRunIdsRef = useRef<Set<string>>(new Set());
+  const scheduledRunIdsRef = useRef<Set<string>>(new Set());
+  const syncTimersRef = useRef<Map<string, number>>(new Map());
 
   useAgentContext({
     description: "ui_locale",
@@ -168,10 +194,96 @@ export default function GeoAgentPanel({
       : GEO_PLACEHOLDER_QUESTIONS.en[activeCategory];
   }, [activeCategory, locale]);
 
+  useEffect(() => {
+    pendingPromptRef.current = chatInputPlaceholder;
+    activeRunIdRef.current = null;
+  }, [chatInputPlaceholder, selectedProduct.id]);
+
+  useEffect(() => {
+    const timers = syncTimersRef.current;
+
+    return () => {
+      for (const timer of timers.values()) {
+        window.clearTimeout(timer);
+      }
+      timers.clear();
+    };
+  }, []);
+
+  const beginDashboardGeneration = useCallback(
+    (message: string) => {
+      const runId = crypto.randomUUID();
+      pendingPromptRef.current = message;
+      activeRunIdRef.current = runId;
+      onGeneratedPanelStart({
+        productId: selectedProduct.id,
+        query: message,
+        runId,
+      });
+    },
+    [onGeneratedPanelStart, selectedProduct.id]
+  );
+
+  const announceDashboardReady = useCallback(
+    (runId: string) => {
+      if (announcedRunIdsRef.current.has(runId)) return;
+      announcedRunIdsRef.current.add(runId);
+      agent.addMessage({
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content:
+          locale === "zh"
+            ? "GEO Readiness Dashboard 已更新。"
+            : "The GEO Readiness Dashboard has been updated.",
+      });
+    },
+    [agent, locale]
+  );
+
+  const requestDashboardSync = useCallback(
+    (payload: GeoGeneratedPanelRenderingPayload) => {
+      const { runId } = payload;
+
+      setDashboardSyncPhases((current) =>
+        current[runId]
+          ? current
+          : {
+              ...current,
+              [runId]: "rendering",
+            }
+      );
+
+      if (scheduledRunIdsRef.current.has(runId)) {
+        return;
+      }
+
+      scheduledRunIdsRef.current.add(runId);
+      onGeneratedPanelRendering(payload);
+
+      const timer = window.setTimeout(() => {
+        setDashboardSyncPhases((current) =>
+          current[runId] === "ready"
+            ? current
+            : {
+                ...current,
+                [runId]: "ready",
+              }
+        );
+        onGeneratedPanelReady(payload);
+        announceDashboardReady(runId);
+        syncTimersRef.current.delete(runId);
+      }, DASHBOARD_RENDER_DELAY_MS);
+
+      syncTimersRef.current.set(runId, timer);
+    },
+    [announceDashboardReady, onGeneratedPanelReady, onGeneratedPanelRendering]
+  );
+
   const handleStarterPrompt = useCallback(
     async (message: string) => {
       if (isSubmittingStarter) return;
 
+      beginDashboardGeneration(message);
       setIsSubmittingStarter(true);
       agent.addMessage({
         id: crypto.randomUUID(),
@@ -185,7 +297,7 @@ export default function GeoAgentPanel({
         setIsSubmittingStarter(false);
       }
     },
-    [agent, copilotkit, isSubmittingStarter]
+    [agent, beginDashboardGeneration, copilotkit, isSubmittingStarter]
   );
 
   const welcomeScreen = useMemo(() => {
@@ -224,31 +336,43 @@ export default function GeoAgentPanel({
     return GeoAgentWelcomeScreen;
   }, [handleStarterPrompt, isSubmittingStarter, locale, suggestions]);
 
-  const chatView = useMemo(
-    () => ({
-      welcomeScreen,
-      input: {
-        className: "geo-agent-chat-input-shell",
-        textArea: "geo-agent-chat-textarea",
-        disclaimer: "geo-agent-chat-disclaimer",
-        sendButton: "geo-agent-chat-send",
-        addMenuButton: "geo-agent-chat-add",
-      },
-      messageView: {
-        className: "geo-agent-message-view",
-        assistantMessage: {
-          className: "geo-agent-assistant-message",
-          toolbar: "geo-agent-assistant-toolbar",
-        },
-        userMessage: {
-          className: "geo-agent-user-message",
-          messageRenderer: "geo-agent-user-bubble",
-          toolbar: "geo-agent-user-toolbar",
-        },
-      },
-    }),
-    [welcomeScreen]
-  );
+  const chatView = useMemo(() => {
+    function GeoAgentChatView(props: ComponentProps<typeof CopilotChatView>) {
+      const handleSubmitMessage = (value: string) => {
+        beginDashboardGeneration(value);
+        props.onSubmitMessage?.(value);
+      };
+
+      return (
+        <CopilotChatView
+          {...props}
+          onSubmitMessage={handleSubmitMessage}
+          welcomeScreen={welcomeScreen}
+          input={{
+            className: "geo-agent-chat-input-shell",
+            textArea: "geo-agent-chat-textarea",
+            disclaimer: "geo-agent-chat-disclaimer",
+            sendButton: "geo-agent-chat-send",
+            addMenuButton: "geo-agent-chat-add",
+          }}
+          messageView={{
+            className: "geo-agent-message-view",
+            assistantMessage: {
+              className: "geo-agent-assistant-message",
+              toolbar: "geo-agent-assistant-toolbar",
+            },
+            userMessage: {
+              className: "geo-agent-user-message",
+              messageRenderer: "geo-agent-user-bubble",
+              toolbar: "geo-agent-user-toolbar",
+            },
+          }}
+        />
+      );
+    }
+
+    return Object.assign(GeoAgentChatView, CopilotChatView);
+  }, [beginDashboardGeneration, welcomeScreen]);
 
   const geoChartTool: ReactFrontendTool<GeoChartPayload> = {
     agentId: GEO_AGENT_ID,
@@ -267,11 +391,29 @@ export default function GeoAgentPanel({
         );
       }
 
-      return <GeoAgentChartCard {...parsed.data} />;
+      const currentRunId = activeRunIdRef.current ?? crypto.randomUUID();
+
+      return (
+        <GeoGeneratedToolNotice
+          chart={parsed.data}
+          locale={locale}
+          productId={selectedProduct.id}
+          query={pendingPromptRef.current || chatInputPlaceholder}
+          runId={currentRunId}
+          phase={dashboardSyncPhases[currentRunId] ?? "rendering"}
+          onSyncRequested={requestDashboardSync}
+        />
+      );
     },
   };
 
-  useFrontendTool(geoChartTool, [locale]);
+  useFrontendTool(geoChartTool, [
+    chatInputPlaceholder,
+    dashboardSyncPhases,
+    locale,
+    requestDashboardSync,
+    selectedProduct.id,
+  ]);
 
   return (
     <CopilotChatConfigurationProvider agentId={GEO_AGENT_ID}>
@@ -284,6 +426,15 @@ export default function GeoAgentPanel({
             <span className="geo-agent-context-value">{selectedProduct.title}</span>
           </div>
         </div>
+
+        {latestDashboardUpdate && (
+          <div className="px-4 pt-4">
+            <GeoAgentStatusReply
+              locale={locale}
+              title={latestDashboardUpdate.title}
+            />
+          </div>
+        )}
 
         <div data-sidebar-chat className="geo-agent-chat-shell flex min-h-0 w-full flex-1 flex-col">
           <CopilotChat
@@ -304,303 +455,162 @@ export default function GeoAgentPanel({
   );
 }
 
-function GeoAgentChartCard({
+function GeoAgentStatusReply({
+  locale,
   title,
-  description,
-  insight,
-  metricLabel,
-  unit,
-  primarySeriesLabel,
-  secondarySeriesLabel,
-  higherIsBetter,
-  initialSort,
-  data,
-}: GeoChartPayload) {
-  const { locale } = useLanguage();
-  const [seriesMode, setSeriesMode] = useState<"primary" | "secondary" | "both">(
-    secondarySeriesLabel ? "both" : "primary"
-  );
-  const [sortMode, setSortMode] = useState<"asc" | "desc">(initialSort);
-  const [activeDatumId, setActiveDatumId] = useState<string | null>(
-    data.find((item) => item.highlighted)?.id ?? data[0]?.id ?? null
-  );
-
-  const numberLocale = locale === "zh" ? "zh-CN" : "en-US";
-
-  const formattedData = useMemo(() => {
-    const copied = [...data];
-
-    copied.sort((left, right) => {
-      const leftValue =
-        seriesMode === "secondary" && left.secondaryValue !== undefined
-          ? left.secondaryValue
-          : left.primaryValue;
-      const rightValue =
-        seriesMode === "secondary" && right.secondaryValue !== undefined
-          ? right.secondaryValue
-          : right.primaryValue;
-
-      return sortMode === "desc"
-        ? rightValue - leftValue
-        : leftValue - rightValue;
-    });
-
-    return copied;
-  }, [data, seriesMode, sortMode]);
-
-  const activeDatum =
-    formattedData.find((item) => item.id === activeDatumId) ?? formattedData[0];
-
-  const maxValue = Math.max(
-    1,
-    ...formattedData.flatMap((item) => {
-      const values = [item.primaryValue];
-
-      if (seriesMode !== "primary" && item.secondaryValue !== undefined) {
-        values.push(item.secondaryValue);
-      }
-
-      return values;
-    })
-  );
-
-  const sortLabel =
-    locale === "zh"
-      ? sortMode === "desc"
-        ? higherIsBetter
-          ? "从高到低"
-          : "从低到高"
-        : higherIsBetter
-        ? "从低到高"
-        : "从高到低"
-      : sortMode === "desc"
-      ? higherIsBetter
-        ? "High to low"
-        : "Low to high"
-      : higherIsBetter
-      ? "Low to high"
-      : "High to low";
-
+}: {
+  locale: "en" | "zh";
+  title: string;
+}) {
   return (
-    <div className="overflow-hidden rounded-[24px] border border-zinc-200/90 bg-white/95 shadow-[0_20px_48px_-36px_rgba(15,23,42,0.35)] dark:border-zinc-800/90 dark:bg-zinc-950/90">
-      <div className="border-b border-zinc-200 px-4 py-4 dark:border-zinc-800">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h4 className="text-sm font-semibold leading-6 text-zinc-900 dark:text-zinc-100">
-              {title}
-            </h4>
-            <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-              {description}
-            </p>
-          </div>
-          <span className="shrink-0 rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-medium text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
-            {metricLabel}
-          </span>
-        </div>
-
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {secondarySeriesLabel && (
-            <>
-              <ToggleChip
-                active={seriesMode === "both"}
-                label={locale === "zh" ? "双视图" : "Both"}
-                onClick={() => setSeriesMode("both")}
-              />
-              <ToggleChip
-                active={seriesMode === "primary"}
-                label={primarySeriesLabel}
-                onClick={() => setSeriesMode("primary")}
-              />
-              <ToggleChip
-                active={seriesMode === "secondary"}
-                label={secondarySeriesLabel}
-                onClick={() => setSeriesMode("secondary")}
-              />
-            </>
-          )}
-          {!secondarySeriesLabel && (
-            <ToggleChip active label={primarySeriesLabel} onClick={() => {}} />
-          )}
-          <button
-            type="button"
-            onClick={() => setSortMode(sortMode === "desc" ? "asc" : "desc")}
-            className="rounded-full border border-zinc-200 px-2.5 py-1 text-[11px] font-medium text-zinc-600 transition-colors hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-zinc-100"
-          >
-            {sortLabel}
-          </button>
-        </div>
-
-        {activeDatum && (
-          <div className="mt-4 rounded-[18px] border border-blue-200/70 bg-blue-50/80 px-3 py-3 dark:border-blue-500/20 dark:bg-blue-500/8">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="font-medium text-blue-700 dark:text-blue-300">
-                {activeDatum.label}
-              </div>
-              <div className="flex flex-wrap items-center gap-2 text-blue-700 dark:text-blue-300">
-                <span>{formatChartValue(activeDatum.primaryValue, unit, numberLocale)}</span>
-                {activeDatum.secondaryValue !== undefined && (
-                  <span className="text-blue-500/80 dark:text-blue-300/80">
-                    {secondarySeriesLabel}:{" "}
-                    {formatChartValue(activeDatum.secondaryValue, unit, numberLocale)}
-                  </span>
-                )}
-              </div>
-            </div>
-            {activeDatum.note && (
-              <p className="mt-1 text-xs text-blue-700/80 dark:text-blue-300/80">
-                {activeDatum.note}
-              </p>
-            )}
-          </div>
-        )}
+    <div className="animate-fade-in-up rounded-[22px] border border-emerald-200/80 bg-emerald-50/85 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-100">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300">
+        {locale === "zh" ? "Agent 回复" : "Agent reply"}
       </div>
-
-      <div className="space-y-3 px-4 py-4">
-        {formattedData.map((item) => {
-          const showPrimary = seriesMode === "primary" || seriesMode === "both";
-          const showSecondary =
-            item.secondaryValue !== undefined &&
-            (seriesMode === "secondary" || seriesMode === "both");
-
-          return (
-            <div
-              key={item.id}
-              role="button"
-              tabIndex={0}
-              onMouseEnter={() => setActiveDatumId(item.id)}
-              onFocus={() => setActiveDatumId(item.id)}
-              className={`rounded-[18px] border px-3 py-3 transition-colors ${
-                item.id === activeDatumId
-                  ? "border-blue-300 bg-blue-50/70 dark:border-blue-500/40 dark:bg-blue-500/6"
-                  : "border-zinc-200 bg-zinc-50/80 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900/70 dark:hover:border-zinc-700"
-              }`}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-sm font-medium leading-5 break-words text-zinc-800 dark:text-zinc-200">
-                    {item.label}
-                  </div>
-                  {item.note && (
-                    <div className="mt-0.5 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-                      {item.note}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  {showPrimary && (
-                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                      {formatChartValue(item.primaryValue, unit, numberLocale)}
-                    </span>
-                  )}
-                  {showSecondary && item.secondaryValue !== undefined && (
-                    <span className="font-medium text-blue-600 dark:text-blue-400">
-                      {formatChartValue(item.secondaryValue, unit, numberLocale)}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-3 space-y-2">
-                {showPrimary && (
-                  <MetricBar
-                    label={primarySeriesLabel}
-                    value={item.primaryValue}
-                    maxValue={maxValue}
-                    color="bg-emerald-500"
-                  />
-                )}
-                {showSecondary && item.secondaryValue !== undefined && (
-                  <MetricBar
-                    label={secondarySeriesLabel!}
-                    value={item.secondaryValue}
-                    maxValue={maxValue}
-                    color="bg-blue-500"
-                  />
-                )}
-              </div>
-            </div>
-          );
-        })}
+      <div className="mt-1 font-medium">
+        {locale === "zh"
+          ? "GEO Readiness Dashboard 已更新。"
+          : "The GEO Readiness Dashboard has been updated."}
       </div>
-
-      <div className="border-t border-zinc-200 px-4 py-3 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-        {insight}
-      </div>
+      <p className="mt-1 text-xs leading-5 text-emerald-700/80 dark:text-emerald-200/80">
+        {title}
+      </p>
     </div>
   );
 }
 
-function ToggleChip({
-  active,
-  label,
-  onClick,
+function GeoGeneratedToolNotice({
+  chart,
+  locale,
+  productId,
+  query,
+  runId,
+  phase,
+  onSyncRequested,
 }: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
+  chart: GeoChartPayload;
+  locale: "en" | "zh";
+  productId: string;
+  query: string;
+  runId: string;
+  phase: "rendering" | "ready";
+  onSyncRequested: (payload: GeoGeneratedPanelRenderingPayload) => void;
 }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`max-w-full rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
-        active
-          ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-          : "border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-zinc-100"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
+  useEffect(() => {
+    onSyncRequested({ productId, query, runId, chart });
+  }, [chart, onSyncRequested, productId, query, runId]);
 
-function MetricBar({
-  label,
-  value,
-  maxValue,
-  color,
-}: {
-  label: string;
-  value: number;
-  maxValue: number;
-  color: string;
-}) {
+  const steps =
+    locale === "zh"
+      ? [
+          {
+            label: "图表数据已生成",
+            status: "done" as const,
+          },
+          {
+            label: "正在重新渲染 GEO Readiness Dashboard",
+            status: phase === "rendering" ? ("active" as const) : ("done" as const),
+          },
+          {
+            label: "完成后发送更新确认",
+            status: phase === "ready" ? ("done" as const) : ("pending" as const),
+          },
+        ]
+      : [
+          {
+            label: "Chart data generated",
+            status: "done" as const,
+          },
+          {
+            label: "Re-rendering the GEO Readiness Dashboard",
+            status: phase === "rendering" ? ("active" as const) : ("done" as const),
+          },
+          {
+            label: "Sending update confirmation",
+            status: phase === "ready" ? ("done" as const) : ("pending" as const),
+          },
+        ];
+
   return (
-    <div>
-      <div className="mb-1 flex items-center justify-between gap-3 text-[11px] text-zinc-500 dark:text-zinc-400">
-        <span className="truncate">{label}</span>
-        <span className="shrink-0">{value}</span>
+    <div className="rounded-[22px] border border-sky-200/80 bg-[linear-gradient(180deg,rgba(240,249,255,0.98),rgba(236,253,245,0.94))] px-4 py-4 text-sm text-slate-800 dark:border-sky-500/20 dark:bg-[linear-gradient(180deg,rgba(12,18,28,0.96),rgba(6,95,70,0.16))] dark:text-sky-100">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-sky-300">
+        {phase === "rendering"
+          ? locale === "zh"
+            ? "正在同步 Dashboard"
+            : "Syncing dashboard"
+          : locale === "zh"
+            ? "Dashboard 已更新"
+            : "Dashboard updated"}
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+      <div className="mt-3 flex items-start gap-3">
+        <div className="relative mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-sky-200/80 bg-white/90 dark:border-sky-400/20 dark:bg-zinc-950/70">
+          <div className="geo-dashboard-orbit absolute inset-1 rounded-[14px] border border-sky-300/80 motion-reduce:animate-none dark:border-sky-400/30" />
+          <div
+            className={`h-2.5 w-2.5 rounded-full ${
+              phase === "rendering" ? "bg-sky-500" : "bg-emerald-500"
+            }`}
+          />
+        </div>
+        <div className="min-w-0">
+          <div className="font-medium text-slate-900 dark:text-white">
+            {phase === "rendering"
+              ? locale === "zh"
+                ? "正在播放生成后的重新渲染流程，让主界面可见地完成更新。"
+                : "Running a visible re-render pass so the dashboard update feels progressive."
+              : locale === "zh"
+                ? "GEO Readiness Dashboard 已更新。"
+                : "The GEO Readiness Dashboard has been updated."}
+          </div>
+          <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-sky-50/78">
+            {chart.title}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-full bg-sky-100/90 dark:bg-sky-400/10">
         <div
-          className={`h-full rounded-full ${color} transition-[width] duration-300`}
-          style={{ width: `${Math.max((value / maxValue) * 100, 6)}%` }}
+          className={`geo-dashboard-scan h-2 rounded-full bg-[linear-gradient(90deg,rgba(14,165,233,0.82),rgba(45,212,191,0.96),rgba(52,211,153,0.86))] transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:animate-none motion-reduce:transition-none ${
+            phase === "ready" ? "" : "opacity-90"
+          }`}
+          style={{ width: phase === "ready" ? "100%" : "76%" }}
         />
       </div>
+
+      <div className="mt-4 space-y-2">
+        {steps.map((step) => (
+          <div
+            key={step.label}
+            className={`rounded-[18px] border px-3 py-2.5 ${
+              step.status === "done"
+                ? "border-emerald-200/80 bg-white/82 dark:border-emerald-400/20 dark:bg-zinc-950/60"
+                : step.status === "active"
+                  ? "border-sky-200/80 bg-white/88 dark:border-sky-400/20 dark:bg-zinc-950/70"
+                  : "border-zinc-200/80 bg-white/70 dark:border-zinc-800 dark:bg-zinc-950/40"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`h-2.5 w-2.5 rounded-full ${
+                  step.status === "done"
+                    ? "bg-emerald-500"
+                    : step.status === "active"
+                      ? "bg-sky-500 motion-safe:animate-pulse motion-reduce:animate-none"
+                      : "bg-zinc-300 dark:bg-zinc-700"
+                }`}
+              />
+              <span
+                className={`text-xs leading-5 ${
+                  step.status === "pending"
+                    ? "text-zinc-500 dark:text-zinc-400"
+                    : "text-slate-700 dark:text-zinc-200"
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
-}
-
-function formatChartValue(
-  value: number,
-  unit: GeoChartUnit,
-  locale: string
-) {
-  switch (unit) {
-    case "percent":
-      return `${value}%`;
-    case "currency":
-      return new Intl.NumberFormat(locale, {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: 1,
-      }).format(value);
-    case "visits":
-      return new Intl.NumberFormat(locale).format(value);
-    case "count":
-    case "score":
-    default:
-      return `${value}`;
-  }
 }
