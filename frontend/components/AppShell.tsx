@@ -31,9 +31,6 @@ export default function AppShell() {
   const [generatedPanels, setGeneratedPanels] = useState<
     Record<string, GeoGeneratedPanelState | null>
   >({});
-  const [agentUpdateNotices, setAgentUpdateNotices] = useState<
-    Record<string, { runId: string; title: string } | null>
-  >({});
 
   const storeProducts = useMemo(
     () => products.filter((p) => p.category === user?.category),
@@ -100,10 +97,6 @@ export default function AppShell() {
           updatedAt: Date.now(),
         },
       }));
-      setAgentUpdateNotices((current) => ({
-        ...current,
-        [productId]: null,
-      }));
     },
     []
   );
@@ -135,13 +128,6 @@ export default function AppShell() {
           },
         };
       });
-      setAgentUpdateNotices((current) => ({
-        ...current,
-        [productId]: {
-          runId,
-          title: chart.title,
-        },
-      }));
     },
     []
   );
@@ -246,7 +232,6 @@ export default function AppShell() {
           open={agentSidebarOpen}
           onToggle={() => setAgentSidebarOpen((prev) => !prev)}
           selectedProduct={selectedProduct}
-          latestDashboardUpdate={agentUpdateNotices[selectedProduct.id] ?? null}
           onGeneratedPanelStart={handleGeneratedPanelStart}
           onGeneratedPanelRendering={handleGeneratedPanelRendering}
           onGeneratedPanelReady={handleGeneratedPanelReady}
