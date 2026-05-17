@@ -383,7 +383,9 @@ export default function GeoAgentPanel({
   }, [agent.isRunning, locale, suggestions]);
 
   const chatView = useMemo(() => {
-    function GeoAgentChatView(props: ComponentProps<typeof CopilotChatView>) {
+    const GeoAgentChatView = (
+      props: ComponentProps<typeof CopilotChatView>
+    ) => {
       const handleSubmitMessage = (value: string) => {
         beginDashboardGeneration(value);
         setOptimisticUserMessage({
@@ -421,9 +423,9 @@ export default function GeoAgentPanel({
           }}
         />
       );
-    }
+    };
 
-    return GeoAgentChatView;
+    return Object.assign(GeoAgentChatView, CopilotChatView);
   }, [beginDashboardGeneration, displayMessages, welcomeScreen]);
 
   const geoChartTool: ReactFrontendTool<GeoChartPayload> = {
