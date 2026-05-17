@@ -3,10 +3,12 @@
 import {
   useCallback,
   useEffect,
+  isValidElement,
   useMemo,
   useRef,
   useState,
   type ComponentProps,
+  type ReactNode,
 } from "react";
 import {
   CopilotChat,
@@ -14,10 +16,10 @@ import {
   CopilotChatView,
   useAgent,
   useAgentContext,
-  useCopilotKit,
   useFrontendTool,
   type ReactFrontendTool,
 } from "@copilotkit/react-core/v2";
+import type { Message } from "@ag-ui/core";
 import { z } from "zod";
 import type { Category, Product } from "@/lib/types";
 import type { GeoChartPayload } from "@/lib/geo-analytics";
@@ -97,16 +99,43 @@ const GEO_STARTER_CATEGORY_LABELS: Record<
 type GeoAgentWelcomeScreenProps = ComponentProps<
   typeof CopilotChatView.WelcomeScreen
 >;
+type SubmitMessageHandler = (value: string) => void;
+
+function findSubmitMessageHandler(
+  node: ReactNode
+): SubmitMessageHandler | null {
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const handler = findSubmitMessageHandler(child);
+      if (handler) return handler;
+    }
+
+    return null;
+  }
+
+  if (!isValidElement(node)) {
+    return null;
+  }
+
+  const props = node.props as {
+    children?: ReactNode;
+    onSubmitMessage?: unknown;
+  };
+
+  if (typeof props.onSubmitMessage === "function") {
+    return props.onSubmitMessage as SubmitMessageHandler;
+  }
+
+  return findSubmitMessageHandler(props.children);
+}
 
 export default function GeoAgentPanel({
   selectedProduct,
-  latestDashboardUpdate,
   onGeneratedPanelStart,
   onGeneratedPanelRendering,
   onGeneratedPanelReady,
 }: {
   selectedProduct: Product;
-  latestDashboardUpdate: { runId: string; title: string } | null;
   onGeneratedPanelStart: (payload: GeoGeneratedPanelStartPayload) => void;
   onGeneratedPanelRendering: (
     payload: GeoGeneratedPanelRenderingPayload
@@ -114,16 +143,16 @@ export default function GeoAgentPanel({
   onGeneratedPanelReady: (payload: GeoGeneratedPanelReadyPayload) => void;
 }) {
   const { agent } = useAgent({ agentId: GEO_AGENT_ID });
-  const { copilotkit } = useCopilotKit();
   const { user } = useAuth();
   const { locale } = useLanguage();
-  const [isSubmittingStarter, setIsSubmittingStarter] = useState(false);
   const [dashboardSyncPhases, setDashboardSyncPhases] = useState<
     Record<string, "rendering" | "ready">
   >({});
+  const [optimisticUserMessage, setOptimisticUserMessage] =
+    useState<Message | null>(null);
+  const [persistedMessages, setPersistedMessages] = useState<Message[]>([]);
   const pendingPromptRef = useRef("");
   const activeRunIdRef = useRef<string | null>(null);
-  const announcedRunIdsRef = useRef<Set<string>>(new Set());
   const scheduledRunIdsRef = useRef<Set<string>>(new Set());
   const syncTimersRef = useRef<Map<string, number>>(new Map());
 
@@ -193,11 +222,64 @@ export default function GeoAgentPanel({
       ? GEO_PLACEHOLDER_QUESTIONS.zh[activeCategory]
       : GEO_PLACEHOLDER_QUESTIONS.en[activeCategory];
   }, [activeCategory, locale]);
+  const liveMessagesKey = agent.messages
+    .map((message) => {
+      const contentKey =
+        typeof message.content === "string"
+          ? message.content.length
+          : Array.isArray(message.content)
+            ? message.content.length
+            : 0;
+      const toolCallsKey =
+        "toolCalls" in message && Array.isArray(message.toolCalls)
+          ? message.toolCalls
+              .map(
+                (toolCall) =>
+                  `${toolCall.id}:${toolCall.function?.arguments?.length ?? 0}`
+              )
+              .join(";")
+          : "";
+
+      return `${message.id}:${message.role}:${contentKey}:${toolCallsKey}`;
+    })
+    .join(",");
+  const liveMessages = useMemo(
+    () => [...agent.messages] as Message[],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [liveMessagesKey, agent.messages]
+  );
+  const displayMessages = useMemo(() => {
+    if (liveMessages.length > 0) {
+      return liveMessages;
+    }
+
+    if (persistedMessages.length > 0) {
+      return persistedMessages;
+    }
+
+    return optimisticUserMessage ? [optimisticUserMessage] : [];
+  }, [liveMessages, optimisticUserMessage, persistedMessages]);
 
   useEffect(() => {
     pendingPromptRef.current = chatInputPlaceholder;
     activeRunIdRef.current = null;
   }, [chatInputPlaceholder, selectedProduct.id]);
+
+  useEffect(() => {
+    if (liveMessages.length === 0) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      setPersistedMessages((current) =>
+        current === liveMessages ? current : liveMessages
+      );
+
+      if (optimisticUserMessage) {
+        setOptimisticUserMessage(null);
+      }
+    });
+  }, [liveMessages, optimisticUserMessage]);
 
   useEffect(() => {
     const timers = syncTimersRef.current;
@@ -222,22 +304,6 @@ export default function GeoAgentPanel({
       });
     },
     [onGeneratedPanelStart, selectedProduct.id]
-  );
-
-  const announceDashboardReady = useCallback(
-    (runId: string) => {
-      if (announcedRunIdsRef.current.has(runId)) return;
-      announcedRunIdsRef.current.add(runId);
-      agent.addMessage({
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content:
-          locale === "zh"
-            ? "GEO Readiness Dashboard 已更新。"
-            : "The GEO Readiness Dashboard has been updated.",
-      });
-    },
-    [agent, locale]
   );
 
   const requestDashboardSync = useCallback(
@@ -270,34 +336,12 @@ export default function GeoAgentPanel({
               }
         );
         onGeneratedPanelReady(payload);
-        announceDashboardReady(runId);
         syncTimersRef.current.delete(runId);
       }, DASHBOARD_RENDER_DELAY_MS);
 
       syncTimersRef.current.set(runId, timer);
     },
-    [announceDashboardReady, onGeneratedPanelReady, onGeneratedPanelRendering]
-  );
-
-  const handleStarterPrompt = useCallback(
-    async (message: string) => {
-      if (isSubmittingStarter) return;
-
-      beginDashboardGeneration(message);
-      setIsSubmittingStarter(true);
-      agent.addMessage({
-        id: crypto.randomUUID(),
-        role: "user",
-        content: message,
-      });
-
-      try {
-        await copilotkit.runAgent({ agent });
-      } finally {
-        setIsSubmittingStarter(false);
-      }
-    },
-    [agent, beginDashboardGeneration, copilotkit, isSubmittingStarter]
+    [onGeneratedPanelReady, onGeneratedPanelRendering]
   );
 
   const welcomeScreen = useMemo(() => {
@@ -305,6 +349,8 @@ export default function GeoAgentPanel({
       input,
       className,
     }: GeoAgentWelcomeScreenProps) {
+      const submitStarterPrompt = findSubmitMessageHandler(input);
+
       return (
         <div className={`geo-agent-welcome-screen${className ? ` ${className}` : ""}`}>
           <div className="geo-agent-welcome-stack">
@@ -316,8 +362,8 @@ export default function GeoAgentPanel({
                 <button
                   key={suggestion.message}
                   type="button"
-                  disabled={isSubmittingStarter}
-                  onClick={() => handleStarterPrompt(suggestion.message)}
+                  disabled={agent.isRunning || !submitStarterPrompt}
+                  onClick={() => submitStarterPrompt?.(suggestion.message)}
                   aria-label={suggestion.message}
                   className="geo-agent-starter-pill"
                 >
@@ -334,20 +380,28 @@ export default function GeoAgentPanel({
     }
 
     return GeoAgentWelcomeScreen;
-  }, [handleStarterPrompt, isSubmittingStarter, locale, suggestions]);
+  }, [agent.isRunning, locale, suggestions]);
 
   const chatView = useMemo(() => {
-    function GeoAgentChatView(props: ComponentProps<typeof CopilotChatView>) {
+    const GeoAgentChatView = (
+      props: ComponentProps<typeof CopilotChatView>
+    ) => {
       const handleSubmitMessage = (value: string) => {
         beginDashboardGeneration(value);
+        setOptimisticUserMessage({
+          id: crypto.randomUUID(),
+          role: "user",
+          content: value,
+        });
         props.onSubmitMessage?.(value);
       };
 
       return (
         <CopilotChatView
           {...props}
+          messages={displayMessages}
           onSubmitMessage={handleSubmitMessage}
-          welcomeScreen={welcomeScreen}
+          welcomeScreen={displayMessages.length > 0 ? false : welcomeScreen}
           input={{
             className: "geo-agent-chat-input-shell",
             textArea: "geo-agent-chat-textarea",
@@ -369,10 +423,10 @@ export default function GeoAgentPanel({
           }}
         />
       );
-    }
+    };
 
     return Object.assign(GeoAgentChatView, CopilotChatView);
-  }, [beginDashboardGeneration, welcomeScreen]);
+  }, [beginDashboardGeneration, displayMessages, welcomeScreen]);
 
   const geoChartTool: ReactFrontendTool<GeoChartPayload> = {
     agentId: GEO_AGENT_ID,
@@ -426,16 +480,6 @@ export default function GeoAgentPanel({
             <span className="geo-agent-context-value">{selectedProduct.title}</span>
           </div>
         </div>
-
-        {latestDashboardUpdate && (
-          <div className="px-4 pt-4">
-            <GeoAgentStatusReply
-              locale={locale}
-              title={latestDashboardUpdate.title}
-            />
-          </div>
-        )}
-
         <div data-sidebar-chat className="geo-agent-chat-shell flex min-h-0 w-full flex-1 flex-col">
           <CopilotChat
             agentId={GEO_AGENT_ID}
@@ -452,30 +496,6 @@ export default function GeoAgentPanel({
         </div>
       </div>
     </CopilotChatConfigurationProvider>
-  );
-}
-
-function GeoAgentStatusReply({
-  locale,
-  title,
-}: {
-  locale: "en" | "zh";
-  title: string;
-}) {
-  return (
-    <div className="animate-fade-in-up rounded-[22px] border border-emerald-200/80 bg-emerald-50/85 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-100">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300">
-        {locale === "zh" ? "Agent 回复" : "Agent reply"}
-      </div>
-      <div className="mt-1 font-medium">
-        {locale === "zh"
-          ? "GEO Readiness Dashboard 已更新。"
-          : "The GEO Readiness Dashboard has been updated."}
-      </div>
-      <p className="mt-1 text-xs leading-5 text-emerald-700/80 dark:text-emerald-200/80">
-        {title}
-      </p>
-    </div>
   );
 }
 

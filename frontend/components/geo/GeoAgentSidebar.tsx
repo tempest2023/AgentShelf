@@ -14,7 +14,6 @@ interface GeoAgentSidebarProps {
   open: boolean;
   onToggle: () => void;
   selectedProduct: Product;
-  latestDashboardUpdate: { runId: string; title: string } | null;
   onGeneratedPanelStart: (payload: GeoGeneratedPanelStartPayload) => void;
   onGeneratedPanelRendering: (
     payload: GeoGeneratedPanelRenderingPayload
@@ -26,7 +25,6 @@ export default function GeoAgentSidebar({
   open,
   onToggle,
   selectedProduct,
-  latestDashboardUpdate,
   onGeneratedPanelStart,
   onGeneratedPanelRendering,
   onGeneratedPanelReady,
@@ -91,7 +89,6 @@ export default function GeoAgentSidebar({
           <GeoAgentPanel
             key={selectedProduct.id}
             selectedProduct={selectedProduct}
-            latestDashboardUpdate={latestDashboardUpdate}
             onGeneratedPanelStart={onGeneratedPanelStart}
             onGeneratedPanelRendering={onGeneratedPanelRendering}
             onGeneratedPanelReady={onGeneratedPanelReady}
