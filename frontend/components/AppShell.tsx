@@ -102,7 +102,13 @@ export default function AppShell() {
   );
 
   const handleGeneratedPanelReady = useCallback(
-    ({ productId, query, runId, chart }: GeoGeneratedPanelReadyPayload) => {
+    ({
+      productId,
+      query,
+      runId,
+      chart,
+      execution,
+    }: GeoGeneratedPanelReadyPayload) => {
       setGeneratedPanels((current) => {
         const previous = current[productId];
 
@@ -122,6 +128,7 @@ export default function AppShell() {
             productId,
             query,
             chart,
+            execution,
             status: "ready",
             createdAt: previous?.createdAt ?? Date.now(),
             updatedAt: Date.now(),
@@ -133,7 +140,13 @@ export default function AppShell() {
   );
 
   const handleGeneratedPanelRendering = useCallback(
-    ({ productId, query, runId, chart }: GeoGeneratedPanelRenderingPayload) => {
+    ({
+      productId,
+      query,
+      runId,
+      chart,
+      execution,
+    }: GeoGeneratedPanelRenderingPayload) => {
       setGeneratedPanels((current) => {
         const previous = current[productId];
 
@@ -153,6 +166,7 @@ export default function AppShell() {
             productId,
             query,
             chart,
+            execution,
             status: "rendering",
             createdAt: previous?.createdAt ?? Date.now(),
             updatedAt: Date.now(),

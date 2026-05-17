@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth/context";
 import AppShell from "@/components/AppShell";
 import LoginPage from "@/components/LoginPage";
@@ -15,21 +15,13 @@ function isNewUser(): boolean {
 
 export default function Home() {
   const { user, isHydrated } = useAuth();
-  const [onboardingNeeded, setOnboardingNeeded] = useState(false);
-  const [checkedOnboarding, setCheckedOnboarding] = useState(false);
-
-  useEffect(() => {
-    if (isHydrated && user) {
-      setOnboardingNeeded(isNewUser());
-      setCheckedOnboarding(true);
-    } else if (isHydrated && !user) {
-      setCheckedOnboarding(true);
-    }
-  }, [isHydrated, user]);
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const onboardingNeeded =
+    isHydrated && Boolean(user) && !onboardingComplete && isNewUser();
 
   const handleOnboardingComplete = useCallback(() => {
     localStorage.setItem(ONBOARDING_KEY, "true");
-    setOnboardingNeeded(false);
+    setOnboardingComplete(true);
   }, []);
 
   if (!isHydrated) {
@@ -54,7 +46,7 @@ export default function Home() {
     return <LoginPage />;
   }
 
-  if (checkedOnboarding && onboardingNeeded) {
+  if (onboardingNeeded) {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 

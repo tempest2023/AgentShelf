@@ -30,6 +30,24 @@ bun start
 bun run lint
 ```
 
+## Daytona Sandbox Demo
+
+The GEO Agent sidebar can now simulate the "agent generates raw code -> Daytona executes it -> dashboard inserts the returned UI node" flow.
+
+Configure these environment variables to enable real Daytona execution in the Copilot route handlers:
+
+```bash
+DAYTONA_API_KEY=your_daytona_api_key
+# Optional:
+DAYTONA_API_URL=https://app.daytona.io/api
+DAYTONA_TARGET=us
+```
+
+Behavior:
+
+- If `DAYTONA_API_KEY` is present, the server sends generated TypeScript raw code to a Daytona sandbox and renders the returned HTML view inside the GEO generated panel.
+- If `DAYTONA_API_KEY` is missing, the same UI flow stays interactive but clearly falls back to a local mock renderer.
+
 ## App Architecture
 
 ```

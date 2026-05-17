@@ -13,16 +13,18 @@ import {
   type GeoAgentLocale,
   type GeoAnalyticsResponse,
 } from "@/lib/geo-analytics";
+import { buildGeoGeneratedPanelToolPayload } from "@/lib/daytona-geo-generated-panel";
+import type { GeoGeneratedPanelToolPayload } from "@/lib/geo-generated-panel";
 
 const GEO_ANALYTICS_TOOL_NAME = "query_geo_analytics";
 const GEO_CHART_TOOL_NAME = "render_geo_chart";
 const DEFAULT_OPENAI_MODEL = "openai/gpt-4.1-mini";
 
-function buildGeoDashboardEvents(
+async function buildGeoDashboardEvents(
   input: RunAgentInput,
   prefixMessage?: string,
   messageId = crypto.randomUUID()
-): BaseEvent[] {
+): Promise<BaseEvent[]> {
   const runtimeContext = parseGeoAgentRuntimeContext(
     input.context as { description: string; value: string }[]
   );
@@ -39,6 +41,13 @@ function buildGeoDashboardEvents(
   const message = prefixMessage
     ? `${prefixMessage}\n\n${response.message}`
     : response.message;
+  const toolPayload = await buildGeoGeneratedPanelToolPayload({
+    chart: response.chart,
+    locale: runtimeContext.locale,
+    query: query || fallbackQuery,
+    selectedProduct: runtimeContext.selectedProduct,
+    storeName: runtimeContext.storeName,
+  });
 
   return [
     {
@@ -51,7 +60,7 @@ function buildGeoDashboardEvents(
       toolCallId,
       toolCallName: GEO_CHART_TOOL_NAME,
       parentMessageId: assistantMessageId,
-      delta: JSON.stringify(response.chart),
+      delta: JSON.stringify(toolPayload),
     },
   ];
 }
@@ -175,14 +184,14 @@ function createTextEvent(messageId: string, delta: string): BaseEvent {
 
 function createChartEvent(
   parentMessageId: string,
-  response: GeoAnalyticsResponse
+  payload: GeoGeneratedPanelToolPayload
 ): BaseEvent {
   return {
     type: EventType.TOOL_CALL_CHUNK,
     toolCallId: crypto.randomUUID(),
     toolCallName: GEO_CHART_TOOL_NAME,
     parentMessageId,
-    delta: JSON.stringify(response.chart),
+    delta: JSON.stringify(payload),
   };
 }
 
@@ -194,7 +203,7 @@ export const geoDashboardAgent = new BuiltInAgent({
       const { runtimeContext, contextSummary } = buildContextSummary(input);
 
       if (!hasOpenAIKey()) {
-        for (const event of buildGeoDashboardEvents(
+        for (const event of await buildGeoDashboardEvents(
           input,
           buildOpenAIMissingMessage(runtimeContext.locale),
           assistantMessageId
@@ -289,12 +298,19 @@ export const geoDashboardAgent = new BuiltInAgent({
         }
 
         const finalGroundedResponse = groundedResponse ?? groundedFallback;
+        const toolPayload = await buildGeoGeneratedPanelToolPayload({
+          chart: finalGroundedResponse.chart,
+          locale: runtimeContext.locale,
+          query: latestQuery || fallbackQuery,
+          selectedProduct: runtimeContext.selectedProduct,
+          storeName: runtimeContext.storeName,
+        });
 
         if (!emittedText) {
           yield createTextEvent(assistantMessageId, finalGroundedResponse.message);
         }
 
-        yield createChartEvent(assistantMessageId, finalGroundedResponse);
+        yield createChartEvent(assistantMessageId, toolPayload);
       } catch {
         if (abortSignal.aborted) {
           return;
@@ -313,7 +329,15 @@ export const geoDashboardAgent = new BuiltInAgent({
           );
         }
 
-        yield createChartEvent(assistantMessageId, groundedFallback);
+        const toolPayload = await buildGeoGeneratedPanelToolPayload({
+          chart: groundedFallback.chart,
+          locale: runtimeContext.locale,
+          query: latestQuery || fallbackQuery,
+          selectedProduct: runtimeContext.selectedProduct,
+          storeName: runtimeContext.storeName,
+        });
+
+        yield createChartEvent(assistantMessageId, toolPayload);
       }
     },
   }),

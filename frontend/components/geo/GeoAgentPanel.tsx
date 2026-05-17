@@ -22,13 +22,13 @@ import {
 import type { Message } from "@ag-ui/core";
 import { z } from "zod";
 import type { Category, Product } from "@/lib/types";
-import type { GeoChartPayload } from "@/lib/geo-analytics";
 import { useLanguage } from "@/lib/i18n/context";
 import { useAuth } from "@/lib/auth/context";
 import type {
   GeoGeneratedPanelReadyPayload,
   GeoGeneratedPanelRenderingPayload,
   GeoGeneratedPanelStartPayload,
+  GeoGeneratedPanelToolPayload,
 } from "@/lib/geo-generated-panel";
 
 const geoChartSchema = z.object({
@@ -51,6 +51,28 @@ const geoChartSchema = z.object({
       highlighted: z.boolean().optional(),
     })
   ),
+});
+
+const geoExecutionSchema = z.object({
+  provider: z.enum(["daytona", "local-fallback"]),
+  status: z.enum(["ready", "fallback", "error"]),
+  runtime: z.literal("typescript"),
+  title: z.string(),
+  summary: z.string(),
+  entryFile: z.string(),
+  rawCode: z.string(),
+  html: z.string(),
+  executedAt: z.string(),
+  sandboxId: z.string().optional(),
+  stdout: z.string().optional(),
+  stderr: z.string().optional(),
+  warnings: z.array(z.string()).optional(),
+  error: z.string().optional(),
+});
+
+const geoGeneratedPanelToolSchema = z.object({
+  chart: geoChartSchema,
+  execution: geoExecutionSchema,
 });
 
 const GEO_AGENT_ID = "geo_dashboard_agent";
@@ -428,14 +450,15 @@ export default function GeoAgentPanel({
     return Object.assign(GeoAgentChatView, CopilotChatView);
   }, [beginDashboardGeneration, displayMessages, welcomeScreen]);
 
-  const geoChartTool: ReactFrontendTool<GeoChartPayload> = {
+  const geoChartTool: ReactFrontendTool<GeoGeneratedPanelToolPayload> = {
     agentId: GEO_AGENT_ID,
     name: "render_geo_chart",
-    description: "Render an interactive GEO analytics chart inside the chat.",
-    parameters: geoChartSchema,
+    description:
+      "Render the GEO analytics chart together with the sandbox-generated panel output.",
+    parameters: geoGeneratedPanelToolSchema,
     followUp: false,
     render: ({ args }) => {
-      const parsed = geoChartSchema.safeParse(args);
+      const parsed = geoGeneratedPanelToolSchema.safeParse(args);
 
       if (!parsed.success) {
         return (
@@ -449,7 +472,7 @@ export default function GeoAgentPanel({
 
       return (
         <GeoGeneratedToolNotice
-          chart={parsed.data}
+          payload={parsed.data}
           locale={locale}
           productId={selectedProduct.id}
           query={pendingPromptRef.current || chatInputPlaceholder}
@@ -500,7 +523,7 @@ export default function GeoAgentPanel({
 }
 
 function GeoGeneratedToolNotice({
-  chart,
+  payload,
   locale,
   productId,
   query,
@@ -508,7 +531,7 @@ function GeoGeneratedToolNotice({
   phase,
   onSyncRequested,
 }: {
-  chart: GeoChartPayload;
+  payload: GeoGeneratedPanelToolPayload;
   locale: "en" | "zh";
   productId: string;
   query: string;
@@ -517,14 +540,43 @@ function GeoGeneratedToolNotice({
   onSyncRequested: (payload: GeoGeneratedPanelRenderingPayload) => void;
 }) {
   useEffect(() => {
-    onSyncRequested({ productId, query, runId, chart });
-  }, [chart, onSyncRequested, productId, query, runId]);
+    onSyncRequested({
+      productId,
+      query,
+      runId,
+      chart: payload.chart,
+      execution: payload.execution,
+    });
+  }, [onSyncRequested, payload.chart, payload.execution, productId, query, runId]);
+
+  const providerLabel =
+    payload.execution.provider === "daytona"
+      ? "Daytona"
+      : locale === "zh"
+        ? "本地回退"
+        : "Local fallback";
+  const executionStepLabel =
+    locale === "zh"
+      ? payload.execution.status === "error"
+        ? "Daytona 执行失败，已切换到本地插入视图"
+        : payload.execution.provider === "daytona"
+          ? "Daytona 沙箱已返回可插入视图"
+          : "本地 mock 已准备可插入视图"
+      : payload.execution.status === "error"
+        ? "Daytona execution failed, so a local insertable view was prepared"
+        : payload.execution.provider === "daytona"
+          ? "Daytona sandbox returned an insertable view"
+          : "Local mock prepared an insertable view";
 
   const steps =
     locale === "zh"
       ? [
           {
             label: "图表数据已生成",
+            status: "done" as const,
+          },
+          {
+            label: executionStepLabel,
             status: "done" as const,
           },
           {
@@ -539,6 +591,10 @@ function GeoGeneratedToolNotice({
       : [
           {
             label: "Chart data generated",
+            status: "done" as const,
+          },
+          {
+            label: executionStepLabel,
             status: "done" as const,
           },
           {
@@ -582,7 +638,12 @@ function GeoGeneratedToolNotice({
                 : "The GEO Readiness Dashboard has been updated."}
           </div>
           <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-sky-50/78">
-            {chart.title}
+            {payload.chart.title}
+          </p>
+          <p className="mt-2 text-[11px] uppercase tracking-[0.16em] text-slate-500 dark:text-sky-100/70">
+            {locale === "zh"
+              ? `代码执行引擎: ${providerLabel}`
+              : `Code execution engine: ${providerLabel}`}
           </p>
         </div>
       </div>
