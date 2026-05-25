@@ -1,8 +1,9 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { NextResponse } from "next/server";
-import { isOpenAIConfigured, getGeoModel } from "@/lib/openai";
-import type { Product } from "@/lib/types";
+import { getGeoModel, isOpenAIConfigured, resolveGeoModel } from "@/lib/openai";
+import { simulateQuery } from "@/lib/mock";
+import type { Product, SimulationResponsePayload } from "@/lib/types";
 
 const simulationSchema = z.object({
   matches: z.array(
@@ -43,13 +44,6 @@ function buildProductSummary(product: Product): string {
 }
 
 export async function POST(req: Request) {
-  if (!isOpenAIConfigured()) {
-    return NextResponse.json(
-      { error: "OpenAI not configured" },
-      { status: 401 }
-    );
-  }
-
   const { query, product } = (await req.json()) as {
     query: string;
     product: Product;
@@ -59,10 +53,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  const result = await generateObject({
-    model: getGeoModel(),
-    schema: simulationSchema,
-    prompt: `You are an AI shopping engine analyst. A user has typed a search query, and you need to evaluate how well a specific product matches that query, as if you were an AI shopping assistant (like ChatGPT Shopping, Google AI Mode, or Perplexity).
+  const fallbackSimulation = simulateQuery(query, product.category);
+  const model = resolveGeoModel();
+  const configured = isOpenAIConfigured();
+
+  if (!configured) {
+    const payload: SimulationResponsePayload = {
+      simulation: fallbackSimulation,
+      status: {
+        mode: "unavailable",
+        configured: false,
+        model,
+        message:
+          "OpenAI is not configured yet. AgentShelf is showing the deterministic query simulator fallback.",
+        updatedAt: new Date().toISOString(),
+      },
+    };
+
+    return NextResponse.json(payload);
+  }
+
+  try {
+    const result = await generateObject({
+      model: getGeoModel(),
+      schema: simulationSchema,
+      prompt: `You are an AI shopping engine analyst. A user has typed a search query, and you need to evaluate how well a specific product matches that query, as if you were an AI shopping assistant (like ChatGPT Shopping, Google AI Mode, or Perplexity).
 
 ## User Query
 "${query}"
@@ -87,11 +102,39 @@ ${buildProductSummary(product)}
 3. **Write an agent preview answer** — as if you were an AI shopping assistant responding to the user. This should be 2-3 sentences that naturally recommend (or explain why you can't confidently recommend) the product. Be conversational and helpful.
 
 Be realistic. If the product is a poor match for the query, give it a low score and explain why. Don't inflate scores.`,
-    temperature: 0.3,
-  });
+      temperature: 0.3,
+    });
 
-  return NextResponse.json({
-    ...result.object,
-    query,
-  });
+    const payload: SimulationResponsePayload = {
+      simulation: {
+        ...result.object,
+        query,
+      },
+      status: {
+        mode: "live",
+        configured: true,
+        model,
+        message: "Live OpenAI query simulation completed successfully.",
+        updatedAt: new Date().toISOString(),
+      },
+    };
+
+    return NextResponse.json(payload);
+  } catch (error) {
+    const payload: SimulationResponsePayload = {
+      simulation: fallbackSimulation,
+      status: {
+        mode: "fallback",
+        configured: true,
+        model,
+        message:
+          "The live OpenAI query simulation failed, so AgentShelf fell back to the deterministic simulator.",
+        error:
+          error instanceof Error ? error.message : "Unknown simulation error",
+        updatedAt: new Date().toISOString(),
+      },
+    };
+
+    return NextResponse.json(payload);
+  }
 }

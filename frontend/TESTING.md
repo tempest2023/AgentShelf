@@ -47,14 +47,17 @@ frontend/
 
 1. **Score Visualization**: The main score ring should animate on load, showing the product's AI readiness score (0-100). Sub-scores for discoverability, clarity, and schema are shown as progress bars.
 
-2. **Missing Signals**: A list of signals the product is missing for AI commerce readiness. Changes when you select a different product.
+2. **Audit Source Status**: The GEO overview should always show whether the current audit result is `Live AI`, `Fallback`, or `Unavailable`. If OpenAI is not configured, the banner should explain that the UI is using deterministic fallback data.
 
-3. **Query Simulator**: Type a query like `"best noise cancelling headphones for commuting"` and click **Simulate**. The simulator shows:
+3. **Missing Signals**: A list of signals the product is missing for AI commerce readiness. Changes when you select a different product.
+
+4. **Query Simulator**: Type a query like `"best noise cancelling headphones for commuting"` and click **Simulate**. The simulator shows:
    - An AI agent preview answer (how ChatGPT would respond)
    - Product match results with match scores
    - Missing signals for each match
+   - A simulator source banner (`Live AI`, `Fallback`, `Unavailable`)
 
-4. **GEO Fixes**: Expandable cards showing recommended fixes for title, description, FAQ, comparison, and JSON-LD schema. Each shows the current value, suggested value, and reasoning.
+5. **GEO Fixes**: Expandable cards showing recommended fixes for title, description, FAQ, comparison, and JSON-LD schema. Each shows the current value, suggested value, and reasoning.
 
 ### Tab 2: AI Commerce Channels
 
@@ -72,23 +75,40 @@ frontend/
 
 3. **Structured FAQ**: Click to expand and view generated Q&A pairs. Copy button available.
 
-4. **Launch Checklist**: Table showing all launch tasks with their status (Done, Needs Review, Missing).
+4. **Exportable Assets**: The Launch Pack export card should allow copy/export for all four asset types:
+   - JSON-LD schema
+   - structured FAQ
+   - Merchant Center feed patch
+   - ChatGPT intent pack
 
-5. **Mock Publish**: Click "Publish Now" to see a publishing animation followed by a success state.
+5. **Launch Checklist**: Table showing all launch tasks with their status (Done, Needs Review, Missing).
+
+6. **Mock Publish**: Click "Publish Now" to see a publishing animation followed by a success state.
 
 ### Sidebar
 
 - **Category Filter**: Switch between Electronics, Outdoor & Sports, Pet Supplies, and Health & Supplements.
 - **Product Selection**: Click any product to see its data across all tabs. The currently selected product is highlighted.
+- **Catalog Source Badge**: The sidebar should show whether the current catalog is imported workspace data or the mock fallback catalog.
+
+### Settings
+
+1. **CSV Import**: Upload a CSV with `title`, `price`, `brand`, `description`, or similar columns. The modal should preview valid rows, invalid rows, and warnings before import.
+
+2. **Demo Sync Reset**: Re-importing from a demo platform should replace the current store catalog with the seeded category catalog.
+
+3. **Analytics Panel**: Recent activity should show login, import, audit, query, agent-open, and asset-export events.
 
 ## Mock Data Guide
 
 ### How Mock Data Works
 
-All data is static and lives in `lib/mock/`. No API calls are made. The mock data system provides:
+Mock data still lives in `lib/mock/`, but it is no longer the only data source. The current stack provides:
 
 - **Specific data** for featured products (MacBook Pro, AirPods Pro 2, hiking backpack, dog leash, fish oil)
 - **Generated defaults** for all other products (randomized scores, generic fixes)
+- **Workspace persistence** for imported catalogs and run history in `lib/workspace/`
+- **Live AI endpoints** for audits and simulations with fallback behavior when live AI is unavailable
 
 ### Adding a New Product
 

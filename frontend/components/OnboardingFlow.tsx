@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Store,
   Link,
@@ -18,6 +18,7 @@ import { useLanguage } from "@/lib/i18n/context";
 import { useAuth } from "@/lib/auth/context";
 import { products } from "@/lib/mock";
 import type { TranslationKey } from "@/lib/i18n/translations";
+import { useWorkspace } from "@/lib/workspace/context";
 import {
   CommerceChannelBadge,
   commerceChannelBrandStyles,
@@ -76,10 +77,12 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const { user } = useAuth();
   const { t, locale, setLocale } = useLanguage();
   const { resolvedTheme, setTheme } = useTheme();
+  const { seedStoreCatalog } = useWorkspace();
   const [phase, setPhase] = useState<"select" | "importing" | "complete">("select");
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformConfig | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [stepProgress, setStepProgress] = useState(0);
+  const importedPlatformRef = useRef<Platform | null>(null);
 
   const productCount = user
     ? products.filter((p) => p.category === user.category).length
@@ -124,6 +127,17 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       clearInterval(progressInterval);
     };
   }, [phase, currentStep, selectedPlatform]);
+
+  useEffect(() => {
+    if (
+      phase === "complete" &&
+      selectedPlatform &&
+      importedPlatformRef.current !== selectedPlatform.id
+    ) {
+      seedStoreCatalog(selectedPlatform.id);
+      importedPlatformRef.current = selectedPlatform.id;
+    }
+  }, [phase, seedStoreCatalog, selectedPlatform]);
 
   useEffect(() => {
     if (phase === "complete") {

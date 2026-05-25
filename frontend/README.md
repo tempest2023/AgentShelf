@@ -1,18 +1,18 @@
 # AgentShelf Frontend
 
-Next.js application for the AI Commerce Channel Manager. All product logic, UI, and mock data live in this directory.
+Next.js application for the AI Commerce Channel Manager. Product UI, live AI routes, workspace persistence, and fallback mock data all live in this directory.
 
 ## Getting Started
 
 ### Prerequisites
 
-- [bun](https://bun.sh/) (recommended) or Node.js 18+
+- Node.js 18+ or [bun](https://bun.sh/)
 
 ### Install & Run
 
 ```bash
-bun install
-bun dev
+npm install
+npm run dev
 ```
 
 The app starts at http://localhost:3000.
@@ -20,15 +20,37 @@ The app starts at http://localhost:3000.
 ### Build
 
 ```bash
-bun run build
-bun start
+npm run build
+npm start
 ```
 
 ### Lint
 
 ```bash
-bun run lint
+npm run lint
 ```
+
+## Live AI + Fallback
+
+The GEO audit and query simulator now support a production-style execution path:
+
+- If `OPENAI_API_KEY` is present, `/api/geo/audit` and `/api/geo/simulate` return live AI-generated results.
+- If the key is missing, the endpoints return deterministic fallback data with an `unavailable` status.
+- If the live request fails, the endpoints return fallback data with a `fallback` status and surface the failure reason.
+
+The UI shows the current state as `live`, `fallback`, or `unavailable` so demos and debugging stay explicit instead of silent.
+
+## Workspace Persistence
+
+AgentShelf now stores workspace state in browser storage:
+
+- imported products
+- audit runs
+- query runs
+- exported launch assets
+- activation analytics events
+
+The app reads workspace products first and only falls back to the seeded demo catalog when a store has not imported products yet.
 
 ## Daytona Sandbox Demo
 
@@ -57,7 +79,7 @@ app/
 └── globals.css         # Tailwind + custom animations
 
 components/
-├── AppShell.tsx        # Top-level state: active tab, selected product
+├── AppShell.tsx        # Top-level state: active tab, selected product, workspace catalog
 ├── Header.tsx          # Sticky header with 3-tab navigation
 ├── Sidebar.tsx         # Collapsible sidebar: category filter + product list
 ├── ScoreRing.tsx       # SVG circular score with fill animation
@@ -69,7 +91,8 @@ components/
     └── LaunchTab.tsx   # Commercial Launch Pack
 
 lib/
-├── types.ts            # All TypeScript interfaces
+├── types.ts            # Shared product and AI response interfaces
+├── workspace/          # Persistent workspace store + CSV parsing
 └── mock/
     ├── index.ts        # Re-exports
     ├── products.ts     # 39 products across 4 categories
@@ -82,21 +105,21 @@ lib/
 
 ## Data Flow
 
-All data is static mock data -- no API calls, no backend. The flow:
+The application now layers imported workspace data on top of the seeded demo catalog:
 
 ```
-User selects product (Sidebar)
-  → AppShell updates selectedProduct state
-    → Tab component receives product prop
-      → Calls mock data functions (getAuditForProduct, etc.)
-        → Renders UI with mock results
+User logs into a store
+  → Workspace store resolves imported products (or seeded fallback products)
+    → GEO tab calls live AI endpoints
+      → Result is persisted as an audit/query run
+        → Launch Pack can export generated assets from the latest run
 ```
 
-Mock data functions in `lib/mock/` return specific data for featured products and auto-generated defaults for the rest.
+Mock data still exists in `lib/mock/`, but it is now an explicit fallback path instead of the only source of truth.
 
 ## Key Design Decisions
 
-**Client components**: All interactive components use `"use client"` since they manage local state (tab switching, product selection, expandable sections). The root `layout.tsx` and `page.tsx` remain server components.
+**Client components**: All interactive components use `"use client"` since they manage local state (tab switching, product selection, imports, expandable sections, and workspace persistence). The root `layout.tsx` and `page.tsx` remain server components.
 
 **Path aliases**: `@/*` maps to the project root via `tsconfig.json` paths. Imports use `@/components/...`, `@/lib/...`.
 
