@@ -50,6 +50,27 @@ export interface QuerySimulation {
   agentPreviewAnswer: string;
 }
 
+export type AIRunStatusMode = "live" | "fallback" | "unavailable";
+
+export interface AIRunStatus {
+  mode: AIRunStatusMode;
+  configured: boolean;
+  model: string;
+  message: string;
+  error?: string;
+  updatedAt: string;
+}
+
+export interface AuditResponsePayload {
+  audit: ProductAudit;
+  status: AIRunStatus;
+}
+
+export interface SimulationResponsePayload {
+  simulation: QuerySimulation;
+  status: AIRunStatus;
+}
+
 export interface SeoGeoComparison {
   productId: string;
   category: Category;

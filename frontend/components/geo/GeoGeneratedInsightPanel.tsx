@@ -3,13 +3,17 @@
 import {
   Activity,
   Bot,
+  Code2,
   Radar,
   Sparkles,
   TrendingUp,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { GeoGeneratedPanelState } from "@/lib/geo-generated-panel";
+import type {
+  GeoGeneratedExecutionArtifact,
+  GeoGeneratedPanelState,
+} from "@/lib/geo-generated-panel";
 import type { GeoChartPayload, GeoChartUnit } from "@/lib/geo-analytics";
 import { useLanguage } from "@/lib/i18n/context";
 
@@ -114,9 +118,17 @@ export default function GeoGeneratedInsightPanel({
           {panel.status === "generating" || !panel.chart ? (
             <GeneratedLoadingBody query={panel.query} />
           ) : panel.status === "rendering" ? (
-            <GeneratedRenderingBody chart={panel.chart} query={panel.query} />
+            <GeneratedRenderingBody
+              chart={panel.chart}
+              query={panel.query}
+              execution={panel.execution}
+            />
           ) : (
-            <GeneratedReadyBody chart={panel.chart} query={panel.query} />
+            <GeneratedReadyBody
+              chart={panel.chart}
+              query={panel.query}
+              execution={panel.execution}
+            />
           )}
         </div>
       </section>
@@ -127,9 +139,11 @@ export default function GeoGeneratedInsightPanel({
 function GeneratedRenderingBody({
   chart,
   query,
+  execution,
 }: {
   chart: GeoChartPayload;
   query: string;
+  execution?: GeoGeneratedExecutionArtifact;
 }) {
   const { locale } = useLanguage();
   const previewRows = chart.data.slice(0, 4);
@@ -223,6 +237,12 @@ function GeneratedRenderingBody({
             </div>
           ))}
         </div>
+
+        {execution ? (
+          <div className="mt-4">
+            <SandboxExecutionCard execution={execution} phase="rendering" />
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -290,9 +310,11 @@ function GeneratedLoadingBody({ query }: { query: string }) {
 function GeneratedReadyBody({
   chart,
   query,
+  execution,
 }: {
   chart: GeoChartPayload;
   query: string;
+  execution?: GeoGeneratedExecutionArtifact;
 }) {
   const { locale } = useLanguage();
   const variant = resolvePanelVariant(chart, query);
@@ -309,57 +331,60 @@ function GeneratedReadyBody({
 
   if (variant === "spotlight") {
     return (
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.96fr)_minmax(0,1.04fr)]">
-        <div className="overflow-hidden rounded-[28px] border border-blue-200/80 bg-[linear-gradient(155deg,rgba(239,246,255,1),rgba(255,255,255,0.98),rgba(240,253,250,0.92))] p-6 dark:border-blue-500/20 dark:bg-[linear-gradient(155deg,rgba(30,41,59,0.95),rgba(9,9,11,0.98),rgba(15,23,42,0.95))]">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">
-                {locale === "zh" ? "当前问题" : "Prompt"}
-              </div>
-              <p className="mt-2 text-sm leading-6 text-zinc-700 dark:text-zinc-300">
-                {query}
-              </p>
-            </div>
-            <div className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-white/85 dark:border-blue-400/20 dark:bg-zinc-950/60">
-              <div className="absolute inset-2 rounded-full border border-blue-200/70 animate-pulse dark:border-blue-400/20" />
-              <div className="text-center">
-                <div className="text-2xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-white">
-                  {Math.round(averageValue)}
+      <div className="space-y-5">
+        {execution ? <SandboxExecutionCard execution={execution} /> : null}
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,0.96fr)_minmax(0,1.04fr)]">
+          <div className="overflow-hidden rounded-[28px] border border-blue-200/80 bg-[linear-gradient(155deg,rgba(239,246,255,1),rgba(255,255,255,0.98),rgba(240,253,250,0.92))] p-6 dark:border-blue-500/20 dark:bg-[linear-gradient(155deg,rgba(30,41,59,0.95),rgba(9,9,11,0.98),rgba(15,23,42,0.95))]">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">
+                  {locale === "zh" ? "当前问题" : "Prompt"}
                 </div>
-                <div className="text-[11px] uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
-                  {locale === "zh" ? "平均" : "Avg"}
+                <p className="mt-2 text-sm leading-6 text-zinc-700 dark:text-zinc-300">
+                  {query}
+                </p>
+              </div>
+              <div className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-white/85 dark:border-blue-400/20 dark:bg-zinc-950/60">
+                <div className="absolute inset-2 rounded-full border border-blue-200/70 animate-pulse dark:border-blue-400/20" />
+                <div className="text-center">
+                  <div className="text-2xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-white">
+                    {Math.round(averageValue)}
+                  </div>
+                  <div className="text-[11px] uppercase tracking-[0.14em] text-zinc-500 dark:text-zinc-400">
+                    {locale === "zh" ? "平均" : "Avg"}
+                  </div>
                 </div>
               </div>
             </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <MetricCallout
+                label={locale === "zh" ? "最强信号" : "Strongest signal"}
+                value={lead?.label ?? chart.metricLabel}
+                detail={
+                  lead
+                    ? `${formatChartValue(lead.primaryValue, chart.unit, locale)}`
+                    : chart.metricLabel
+                }
+              />
+              <MetricCallout
+                label={locale === "zh" ? "主要短板" : "Primary gap"}
+                value={tail?.label ?? chart.metricLabel}
+                detail={
+                  tail
+                    ? `${formatChartValue(tail.primaryValue, chart.unit, locale)}`
+                    : chart.metricLabel
+                }
+              />
+            </div>
+
+            <p className="mt-5 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+              {chart.insight}
+            </p>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <MetricCallout
-              label={locale === "zh" ? "最强信号" : "Strongest signal"}
-              value={lead?.label ?? chart.metricLabel}
-              detail={
-                lead
-                  ? `${formatChartValue(lead.primaryValue, chart.unit, locale)}`
-                  : chart.metricLabel
-              }
-            />
-            <MetricCallout
-              label={locale === "zh" ? "主要短板" : "Primary gap"}
-              value={tail?.label ?? chart.metricLabel}
-              detail={
-                tail
-                  ? `${formatChartValue(tail.primaryValue, chart.unit, locale)}`
-                  : chart.metricLabel
-              }
-            />
-          </div>
-
-          <p className="mt-5 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-            {chart.insight}
-          </p>
+          <GeoAgentChartCard {...chart} chrome="embedded" />
         </div>
-
-        <GeoAgentChartCard {...chart} chrome="embedded" />
       </div>
     );
   }
@@ -367,6 +392,7 @@ function GeneratedReadyBody({
   if (variant === "opportunity") {
     return (
       <div className="space-y-5">
+        {execution ? <SandboxExecutionCard execution={execution} /> : null}
         <div className="grid gap-4 xl:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)]">
           <div className="overflow-hidden rounded-[28px] border border-emerald-200/80 bg-[linear-gradient(160deg,rgba(236,253,245,1),rgba(255,255,255,0.98),rgba(240,249,255,0.92))] p-6 dark:border-emerald-500/20 dark:bg-[linear-gradient(160deg,rgba(6,95,70,0.28),rgba(9,9,11,0.98),rgba(12,18,28,0.94))]">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:bg-zinc-950/50 dark:text-emerald-300">
@@ -416,6 +442,7 @@ function GeneratedReadyBody({
 
   return (
     <div className="space-y-5">
+      {execution ? <SandboxExecutionCard execution={execution} /> : null}
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_320px]">
         <div className="overflow-hidden rounded-[28px] border border-amber-200/80 bg-[linear-gradient(160deg,rgba(255,251,235,1),rgba(255,255,255,0.98),rgba(250,245,255,0.92))] p-6 dark:border-amber-500/20 dark:bg-[linear-gradient(160deg,rgba(120,53,15,0.22),rgba(9,9,11,0.98),rgba(30,27,75,0.92))]">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700 dark:bg-zinc-950/50 dark:text-amber-300">
@@ -463,6 +490,203 @@ function GeneratedReadyBody({
 
       <GeoAgentChartCard {...chart} chrome="embedded" />
     </div>
+  );
+}
+
+function SandboxExecutionCard({
+  execution,
+  phase = "ready",
+}: {
+  execution: GeoGeneratedExecutionArtifact;
+  phase?: "rendering" | "ready";
+}) {
+  const { locale } = useLanguage();
+  const codePreview = useMemo(
+    () => execution.rawCode.trim().split("\n").slice(0, 14).join("\n"),
+    [execution.rawCode]
+  );
+  const codeLineCount = useMemo(
+    () => execution.rawCode.trim().split("\n").length,
+    [execution.rawCode]
+  );
+  const executedAt = useMemo(() => {
+    const date = new Date(execution.executedAt);
+
+    if (Number.isNaN(date.getTime())) {
+      return execution.executedAt;
+    }
+
+    return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date);
+  }, [execution.executedAt, locale]);
+
+  const providerLabel =
+    execution.provider === "daytona"
+      ? "Daytona"
+      : locale === "zh"
+        ? "本地回退"
+        : "Local fallback";
+  const statusLabel =
+    execution.status === "ready"
+      ? locale === "zh"
+        ? "已执行"
+        : "Executed"
+      : execution.status === "error"
+        ? locale === "zh"
+          ? "执行报错"
+          : "Execution error"
+        : locale === "zh"
+          ? "Mock 回退"
+          : "Mock fallback";
+
+  return (
+    <section className="overflow-hidden rounded-[28px] border border-sky-200/80 bg-[linear-gradient(180deg,rgba(240,249,255,0.98),rgba(255,255,255,0.98))] dark:border-sky-500/20 dark:bg-[linear-gradient(180deg,rgba(12,18,28,0.96),rgba(9,9,11,0.98))]">
+      <div className="border-b border-sky-100/90 px-5 py-5 dark:border-sky-500/10">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200/80 bg-white/86 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-700 dark:border-sky-400/20 dark:bg-zinc-950/60 dark:text-sky-300">
+              <Code2 className="h-3.5 w-3.5" />
+              {phase === "rendering"
+                ? locale === "zh"
+                  ? "Sandbox 输出已就绪"
+                  : "Sandbox output ready"
+                : locale === "zh"
+                  ? "Sandbox 执行记录"
+                  : "Sandbox execution"}
+            </div>
+            <h4 className="mt-3 text-lg font-semibold tracking-[-0.03em] text-zinc-950 dark:text-zinc-50">
+              {execution.title}
+            </h4>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+              {execution.summary}
+            </p>
+          </div>
+          <div
+            className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] ${
+              execution.status === "ready"
+                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/12 dark:text-emerald-300"
+                : execution.status === "error"
+                  ? "bg-rose-100 text-rose-700 dark:bg-rose-500/12 dark:text-rose-300"
+                  : "bg-amber-100 text-amber-700 dark:bg-amber-500/12 dark:text-amber-300"
+            }`}
+          >
+            {statusLabel}
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-4">
+          <MetricCallout
+            label={locale === "zh" ? "执行引擎" : "Engine"}
+            value={providerLabel}
+            detail={execution.runtime}
+          />
+          <MetricCallout
+            label={locale === "zh" ? "入口文件" : "Entry file"}
+            value={execution.entryFile}
+            detail={`${codeLineCount} ${locale === "zh" ? "行代码" : "lines"}`}
+          />
+          <MetricCallout
+            label={locale === "zh" ? "执行时间" : "Executed at"}
+            value={executedAt}
+            detail={
+              execution.sandboxId
+                ? `${locale === "zh" ? "沙箱" : "Sandbox"} ${execution.sandboxId.slice(0, 8)}`
+                : locale === "zh"
+                  ? "未创建远程沙箱"
+                  : "No remote sandbox"
+            }
+          />
+          <MetricCallout
+            label={locale === "zh" ? "返回视图" : "Rendered view"}
+            value={locale === "zh" ? "HTML 节点" : "HTML node"}
+            detail={
+              phase === "rendering"
+                ? locale === "zh"
+                  ? "等待 Dashboard 完成同步"
+                  : "Waiting for dashboard sync"
+                : locale === "zh"
+                  ? "已嵌入当前面板"
+                  : "Embedded in this panel"
+            }
+          />
+        </div>
+      </div>
+
+      <div className="grid gap-5 px-5 py-5 xl:grid-cols-[minmax(0,1.04fr)_minmax(300px,0.96fr)]">
+        <div className="rounded-[24px] border border-zinc-200/80 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/78">
+          <div className="flex items-center justify-between gap-3 px-2 pb-3">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
+              {locale === "zh" ? "Daytona 返回的嵌入视图" : "Embeddable view returned from Daytona"}
+            </div>
+            <div className="text-xs text-zinc-500 dark:text-zinc-400">
+              {execution.provider === "daytona"
+                ? locale === "zh"
+                  ? "真实沙箱结果"
+                  : "Live sandbox output"
+                : locale === "zh"
+                  ? "本地模拟结果"
+                  : "Local simulated output"}
+            </div>
+          </div>
+          <iframe
+            title={execution.title}
+            srcDoc={execution.html}
+            sandbox=""
+            loading="lazy"
+            className="h-[340px] w-full rounded-[18px] border border-zinc-200/80 bg-white dark:border-zinc-800"
+          />
+        </div>
+
+        <div className="space-y-4">
+          <div className="rounded-[24px] border border-zinc-200/80 bg-zinc-950 p-4 text-zinc-100 shadow-[0_20px_48px_-42px_rgba(15,23,42,0.55)]">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                {locale === "zh" ? "Raw code 预览" : "Raw code preview"}
+              </div>
+              <div className="text-xs text-zinc-500">
+                {execution.entryFile}
+              </div>
+            </div>
+            <pre className="mt-3 overflow-x-auto text-xs leading-6 text-zinc-200">
+              <code>{codePreview}</code>
+            </pre>
+          </div>
+
+          {execution.warnings?.length ? (
+            <div className="rounded-[22px] border border-amber-200/80 bg-amber-50/90 px-4 py-4 dark:border-amber-500/20 dark:bg-amber-500/8">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
+                {locale === "zh" ? "执行提示" : "Execution notes"}
+              </div>
+              <div className="mt-2 space-y-2">
+                {execution.warnings.map((warning) => (
+                  <p
+                    key={warning}
+                    className="text-sm leading-6 text-amber-900 dark:text-amber-100"
+                  >
+                    {warning}
+                  </p>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {execution.error ? (
+            <div className="rounded-[22px] border border-rose-200/80 bg-rose-50/90 px-4 py-4 dark:border-rose-500/20 dark:bg-rose-500/8">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-rose-700 dark:text-rose-300">
+                {locale === "zh" ? "错误详情" : "Error details"}
+              </div>
+              <p className="mt-2 text-sm leading-6 text-rose-900 dark:text-rose-100">
+                {execution.error}
+              </p>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </section>
   );
 }
 

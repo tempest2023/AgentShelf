@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown, Package, Settings } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/context";
 import type { Product } from "@/lib/types";
+import Badge from "@/components/Badge";
 
 interface SidebarProps {
   products: Product[];
@@ -11,6 +12,8 @@ interface SidebarProps {
   onSelectProduct: (product: Product) => void;
   activeTab: string;
   onTabChange: (tab: string) => void;
+  catalogSource: "workspace" | "mock-fallback";
+  lastImportAt?: string;
 }
 
 export default function Sidebar({
@@ -19,9 +22,17 @@ export default function Sidebar({
   onSelectProduct,
   activeTab,
   onTabChange,
+  catalogSource,
+  lastImportAt,
 }: SidebarProps) {
   const [expanded, setExpanded] = useState(true);
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const lastImportedLabel = lastImportAt
+    ? new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
+        month: "short",
+        day: "numeric",
+      }).format(new Date(lastImportAt))
+    : null;
 
   return (
     <aside
@@ -48,6 +59,25 @@ export default function Sidebar({
             }`}
           />
         </button>
+        {expanded && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 px-2">
+            <Badge
+              variant={catalogSource === "workspace" ? "success" : "warning"}
+            >
+              {catalogSource === "workspace"
+                ? t("sidebar.catalogImported")
+                : t("sidebar.catalogFallback")}
+            </Badge>
+            <span className="text-[11px] text-zinc-500">
+              {products.length} {t("sidebar.products")}
+            </span>
+            {lastImportedLabel ? (
+              <span className="text-[11px] text-zinc-400">
+                {t("sidebar.lastImport")} {lastImportedLabel}
+              </span>
+            ) : null}
+          </div>
+        )}
       </div>
 
       {expanded && (

@@ -18,17 +18,21 @@ import {
   BarChart3,
   Sparkles,
   X,
+  Download,
 } from "lucide-react";
 import type { LaunchChecklistItem, Product } from "@/lib/types";
 import {
   getComparison,
   getAuditForProduct,
+  getChatgptPack,
+  getGoogleChecklist,
   launchChecklist,
 } from "@/lib/mock";
 import { useLanguage, type Locale } from "@/lib/i18n/context";
 import type { TranslationKey } from "@/lib/i18n/translations";
 import Card, { CardHeader, CardTitle } from "@/components/Card";
 import Badge from "@/components/Badge";
+import { useWorkspace } from "@/lib/workspace/context";
 import CommerceChannelIcon, {
   commerceChannelBrandStyles,
   type CommerceChannelId,
@@ -82,7 +86,11 @@ export default function LaunchTab({
   onPublishStateChange: (productId: string, state: PublishState) => void;
 }) {
   const comparison = getComparison(product.id, product.category);
-  const audit = getAuditForProduct(product.id);
+  const { getLatestAuditRun, recordAssetExport } = useWorkspace();
+  const latestAuditRun = getLatestAuditRun(product.id);
+  const audit = latestAuditRun?.audit ?? getAuditForProduct(product.id);
+  const chatgptPack = getChatgptPack(product.id);
+  const googleChecklist = getGoogleChecklist(product.id);
   const [showJsonLd, setShowJsonLd] = useState(false);
   const [showFaq, setShowFaq] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -111,6 +119,10 @@ export default function LaunchTab({
   const previewDescription =
     descriptionFix?.suggestedValue ?? product.description;
   const faqItems = faqFix ? parseFaq(faqFix.suggestedValue) : [];
+  const schemaContent = schemaFix?.suggestedValue ?? "";
+  const faqContent = faqFix?.suggestedValue ?? "";
+  const feedPatchContent = JSON.stringify(googleChecklist.feedPatch, null, 2);
+  const intentPackContent = buildIntentPack(chatgptPack);
   const selectedChannels = PUBLISH_CHANNELS.filter((channel) =>
     selectedChannelIds.includes(channel.id)
   );
@@ -134,10 +146,45 @@ export default function LaunchTab({
     [onPublishStateChange, product.id]
   );
 
-  const copyToClipboard = (text: string, field: string) => {
+  const copyToClipboard = (
+    text: string,
+    field: string,
+    assetType?: "jsonld" | "faq" | "feed_patch" | "intent_pack",
+    title?: string
+  ) => {
     navigator.clipboard.writeText(text);
     setCopiedField(field);
+    if (assetType && title) {
+      recordAssetExport({
+        productId: product.id,
+        type: assetType,
+        title,
+        content: text,
+      });
+    }
     window.setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  const exportAsset = (
+    filename: string,
+    content: string,
+    assetType: "jsonld" | "faq" | "feed_patch" | "intent_pack",
+    title: string,
+    mimeType = "text/plain;charset=utf-8"
+  ) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    recordAssetExport({
+      productId: product.id,
+      type: assetType,
+      title,
+      content,
+    });
   };
 
   const openPublishExperience = () => {
@@ -283,7 +330,12 @@ export default function LaunchTab({
                     <button
                       onClick={(event) => {
                         event.stopPropagation();
-                        copyToClipboard(schemaFix.suggestedValue, "schema");
+                        copyToClipboard(
+                          schemaFix.suggestedValue,
+                          "schema",
+                          "jsonld",
+                          "product-schema.jsonld"
+                        );
                       }}
                       className="flex items-center gap-1 rounded px-2 py-1 text-xs text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-300"
                     >
@@ -346,7 +398,14 @@ export default function LaunchTab({
                   ))}
                 </div>
                 <button
-                  onClick={() => copyToClipboard(faqFix.suggestedValue, "faq")}
+                  onClick={() =>
+                    copyToClipboard(
+                      faqFix.suggestedValue,
+                      "faq",
+                      "faq",
+                      "structured-faq.txt"
+                    )
+                  }
                   className="mt-3 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
                 >
                   {copiedField === "faq" ? (
@@ -367,6 +426,103 @@ export default function LaunchTab({
             )}
           </Card>
         </div>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <CardTitle>{t("launch.assetsTitle")}</CardTitle>
+            </div>
+            <Badge variant="info">4 {t("launch.generated")}</Badge>
+          </CardHeader>
+
+          <div className="space-y-3">
+            <AssetActionRow
+              title={t("launch.jsonLd")}
+              description="JSON-LD"
+              onCopy={() =>
+                copyToClipboard(
+                  schemaContent,
+                  "schema-export",
+                  "jsonld",
+                  "product-schema.jsonld"
+                )
+              }
+              onExport={() =>
+                exportAsset(
+                  `${product.id}-product-schema.jsonld`,
+                  formatJsonAsset(schemaContent),
+                  "jsonld",
+                  "product-schema.jsonld",
+                  "application/ld+json;charset=utf-8"
+                )
+              }
+              disabled={!schemaContent}
+            />
+            <AssetActionRow
+              title={t("launch.structuredFaq")}
+              description="FAQ"
+              onCopy={() =>
+                copyToClipboard(
+                  faqContent,
+                  "faq-export",
+                  "faq",
+                  "structured-faq.txt"
+                )
+              }
+              onExport={() =>
+                exportAsset(
+                  `${product.id}-structured-faq.txt`,
+                  faqContent,
+                  "faq",
+                  "structured-faq.txt"
+                )
+              }
+              disabled={!faqContent}
+            />
+            <AssetActionRow
+              title={t("launch.feedPatch")}
+              description="Merchant Center"
+              onCopy={() =>
+                copyToClipboard(
+                  feedPatchContent,
+                  "feed-patch-export",
+                  "feed_patch",
+                  "merchant-center-feed.json"
+                )
+              }
+              onExport={() =>
+                exportAsset(
+                  `${product.id}-merchant-center-feed.json`,
+                  feedPatchContent,
+                  "feed_patch",
+                  "merchant-center-feed.json",
+                  "application/json;charset=utf-8"
+                )
+              }
+            />
+            <AssetActionRow
+              title={t("launch.intentPack")}
+              description="ChatGPT"
+              onCopy={() =>
+                copyToClipboard(
+                  intentPackContent,
+                  "intent-pack-export",
+                  "intent_pack",
+                  "chatgpt-intent-pack.txt"
+                )
+              }
+              onExport={() =>
+                exportAsset(
+                  `${product.id}-chatgpt-intent-pack.txt`,
+                  intentPackContent,
+                  "intent_pack",
+                  "chatgpt-intent-pack.txt"
+                )
+              }
+            />
+          </div>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -1612,6 +1768,49 @@ function ComparisonMetric({
   );
 }
 
+function AssetActionRow({
+  title,
+  description,
+  onCopy,
+  onExport,
+  disabled = false,
+}: {
+  title: string;
+  description: string;
+  onCopy: () => void;
+  onExport: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950/40 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+          {title}
+        </div>
+        <div className="text-xs text-zinc-500">{description}</div>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onCopy}
+          disabled={disabled}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        >
+          <Copy className="h-3.5 w-3.5" />
+          Copy
+        </button>
+        <button
+          onClick={onExport}
+          disabled={disabled}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Download className="h-3.5 w-3.5" />
+          Export
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ChecklistStatus({
   status,
   t,
@@ -1673,6 +1872,43 @@ function parseFaq(text: string): { question: string; answer: string }[] {
   }
 
   return items;
+}
+
+function formatJsonAsset(value: string) {
+  if (!value) {
+    return value;
+  }
+
+  try {
+    return JSON.stringify(JSON.parse(value), null, 2);
+  } catch {
+    return value;
+  }
+}
+
+function buildIntentPack(pack: ReturnType<typeof getChatgptPack>) {
+  const claims = pack.comparisonClaims
+    .map((claim) => `- ${claim.competitor}: ${claim.claim}`)
+    .join("\n");
+  const fixes = pack.requiredFixes.map((fix) => `- ${fix}`).join("\n");
+  const intents = pack.primaryIntents.map((intent) => `- ${intent}`).join("\n");
+
+  return [
+    "Primary intents:",
+    intents,
+    "",
+    "Sponsored message:",
+    pack.sponsoredMessage,
+    "",
+    "Ad-safe summary:",
+    pack.adSafeSummary,
+    "",
+    "Comparison claims:",
+    claims,
+    "",
+    "Required fixes:",
+    fixes,
+  ].join("\n");
 }
 
 function getSchemaPreviewTags(schemaText?: string) {

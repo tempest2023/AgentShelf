@@ -3,10 +3,10 @@
 import { Store, Laptop, Mountain, Dog, Heart, Sun, Moon, Languages } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useLanguage } from "@/lib/i18n/context";
+import type { TranslationKey } from "@/lib/i18n/translations";
 import { useAuth, MOCK_USERS } from "@/lib/auth/context";
 import { products } from "@/lib/mock";
 import type { Category } from "@/lib/types";
-import { useState, useEffect } from "react";
 
 const categoryIcons: Record<Category, React.ReactNode> = {
   electronics: <Laptop className="w-5 h-5" />,
@@ -42,7 +42,7 @@ const categoryColors: Record<Category, { bg: string; text: string; border: strin
   },
 };
 
-const categoryTranslationKeys: Record<Category, string> = {
+const categoryTranslationKeys: Record<Category, TranslationKey> = {
   electronics: "login.electronics",
   outdoor: "login.outdoor",
   pets: "login.pets",
@@ -52,10 +52,7 @@ const categoryTranslationKeys: Record<Category, string> = {
 export default function LoginPage() {
   const { login } = useAuth();
   const { locale, setLocale, t } = useLanguage();
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const { resolvedTheme, setTheme } = useTheme();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-50 via-white to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 flex flex-col">
@@ -69,10 +66,16 @@ export default function LoginPage() {
           {locale === "en" ? "中文" : "EN"}
         </button>
         <button
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          onClick={() =>
+            setTheme(resolvedTheme === "dark" ? "light" : "dark")
+          }
           className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500"
         >
-          {mounted && theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          {resolvedTheme === "dark" ? (
+            <Sun className="w-4 h-4" />
+          ) : (
+            <Moon className="w-4 h-4" />
+          )}
         </button>
       </div>
 
@@ -124,7 +127,7 @@ export default function LoginPage() {
                       <div className="flex items-center gap-1.5 mb-3">
                         <span className={colors.text}>{categoryIcons[user.category]}</span>
                         <span className={`text-xs font-medium ${colors.text}`}>
-                          {t(categoryTranslationKeys[user.category] as any)}
+                          {t(categoryTranslationKeys[user.category])}
                         </span>
                         <span className="text-xs text-zinc-400">
                           &middot; {productCount} {t("login.products")}

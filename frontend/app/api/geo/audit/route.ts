@@ -1,8 +1,9 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { NextResponse } from "next/server";
-import { isOpenAIConfigured, getGeoModel } from "@/lib/openai";
-import type { Product } from "@/lib/types";
+import { getGeoModel, isOpenAIConfigured, resolveGeoModel } from "@/lib/openai";
+import { getAuditForProduct } from "@/lib/mock";
+import type { AuditResponsePayload, Product } from "@/lib/types";
 
 const auditSchema = z.object({
   aiReadinessScore: z.number().min(0).max(100),
@@ -53,13 +54,6 @@ function buildProductSummary(product: Product): string {
 }
 
 export async function POST(req: Request) {
-  if (!isOpenAIConfigured()) {
-    return NextResponse.json(
-      { error: "OpenAI not configured" },
-      { status: 401 }
-    );
-  }
-
   const { product } = (await req.json()) as { product: Product };
 
   if (!product?.id || !product?.title) {
@@ -69,10 +63,31 @@ export async function POST(req: Request) {
     );
   }
 
-  const result = await generateObject({
-    model: getGeoModel(),
-    schema: auditSchema,
-    prompt: `You are a Generative Engine Optimization (GEO) expert. Analyze this product and score its readiness for AI-powered recommendation engines (ChatGPT Shopping, Google AI Mode, Perplexity, Claude, Gemini).
+  const fallbackAudit = getAuditForProduct(product.id);
+  const model = resolveGeoModel();
+  const configured = isOpenAIConfigured();
+
+  if (!configured) {
+    const payload: AuditResponsePayload = {
+      audit: fallbackAudit,
+      status: {
+        mode: "unavailable",
+        configured: false,
+        model,
+        message:
+          "OpenAI is not configured yet. AgentShelf is showing the deterministic mock fallback.",
+        updatedAt: new Date().toISOString(),
+      },
+    };
+
+    return NextResponse.json(payload);
+  }
+
+  try {
+    const result = await generateObject({
+      model: getGeoModel(),
+      schema: auditSchema,
+      prompt: `You are a Generative Engine Optimization (GEO) expert. Analyze this product and score its readiness for AI-powered recommendation engines (ChatGPT Shopping, Google AI Mode, Perplexity, Claude, Gemini).
 
 ## Product Data
 ${buildProductSummary(product)}
@@ -106,11 +121,38 @@ ${buildProductSummary(product)}
 - Reasoning for the change
 
 Generate realistic, specific suggestions based on the actual product data. Do not invent product features that don't exist.`,
-    temperature: 0.3,
-  });
+      temperature: 0.3,
+    });
 
-  return NextResponse.json({
-    ...result.object,
-    productId: product.id,
-  });
+    const payload: AuditResponsePayload = {
+      audit: {
+        ...result.object,
+        productId: product.id,
+      },
+      status: {
+        mode: "live",
+        configured: true,
+        model,
+        message: "Live OpenAI audit completed successfully.",
+        updatedAt: new Date().toISOString(),
+      },
+    };
+
+    return NextResponse.json(payload);
+  } catch (error) {
+    const payload: AuditResponsePayload = {
+      audit: fallbackAudit,
+      status: {
+        mode: "fallback",
+        configured: true,
+        model,
+        message:
+          "The live OpenAI audit failed, so AgentShelf fell back to the deterministic mock audit.",
+        error: error instanceof Error ? error.message : "Unknown audit error",
+        updatedAt: new Date().toISOString(),
+      },
+    };
+
+    return NextResponse.json(payload);
+  }
 }

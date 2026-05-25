@@ -4,6 +4,7 @@ import { useEffect, useCallback } from "react";
 import { Bot, X } from "lucide-react";
 import type { Product } from "@/lib/types";
 import GeoAgentPanel from "./GeoAgentPanel";
+import { useWorkspace } from "@/lib/workspace/context";
 import type {
   GeoGeneratedPanelReadyPayload,
   GeoGeneratedPanelRenderingPayload,
@@ -29,6 +30,7 @@ export default function GeoAgentSidebar({
   onGeneratedPanelRendering,
   onGeneratedPanelReady,
 }: GeoAgentSidebarProps) {
+  const { trackEvent } = useWorkspace();
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape" && open) {
@@ -42,6 +44,17 @@ export default function GeoAgentSidebar({
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    trackEvent("agent_open", {
+      productId: selectedProduct.id,
+      category: selectedProduct.category,
+    });
+  }, [open, selectedProduct.category, selectedProduct.id, trackEvent]);
 
   return (
     <>

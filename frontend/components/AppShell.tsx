@@ -10,7 +10,6 @@ import ChannelsTab from "./tabs/ChannelsTab";
 import LaunchTab from "./tabs/LaunchTab";
 import SettingsTab from "./tabs/SettingsTab";
 import GeoAgentSidebar from "./geo/GeoAgentSidebar";
-import { products } from "@/lib/mock";
 import { useAuth } from "@/lib/auth/context";
 import { useLanguage } from "@/lib/i18n/context";
 import type { Product } from "@/lib/types";
@@ -20,31 +19,35 @@ import type {
   GeoGeneratedPanelStartPayload,
   GeoGeneratedPanelState,
 } from "@/lib/geo-generated-panel";
+import { useWorkspace } from "@/lib/workspace/context";
 
 type ProductPublishState = "idle" | "publishing" | "done";
 
 export default function AppShell() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const { t } = useLanguage();
+  const { catalogProducts, catalogSource, lastImportAt } = useWorkspace();
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [agentSidebarOpen, setAgentSidebarOpen] = useState(false);
   const [generatedPanels, setGeneratedPanels] = useState<
     Record<string, GeoGeneratedPanelState | null>
   >({});
-
-  const storeProducts = useMemo(
-    () => products.filter((p) => p.category === user?.category),
-    [user?.category]
-  );
+  const storeProducts = catalogProducts;
 
   const [activeTab, setActiveTab] = useState("geo");
   const [previousTab, setPreviousTab] = useState("geo");
-  const [selectedProduct, setSelectedProduct] = useState<Product>(
-    storeProducts[0]
+  const [selectedProductId, setSelectedProductId] = useState(
+    storeProducts[0]?.id ?? ""
   );
   const [publishStates, setPublishStates] = useState<
     Record<string, ProductPublishState>
   >({});
+  const selectedProduct = useMemo(
+    () =>
+      storeProducts.find((product) => product.id === selectedProductId) ??
+      storeProducts[0],
+    [selectedProductId, storeProducts]
+  );
 
   const handlePublishStateChange = useCallback((
     productId: string,
@@ -68,7 +71,7 @@ export default function AppShell() {
   }, [previousTab]);
 
   const handleSelectProduct = useCallback((product: Product) => {
-    setSelectedProduct(product);
+    setSelectedProductId(product.id);
     if (activeTab === "settings") {
       setActiveTab(previousTab);
     }
@@ -102,7 +105,13 @@ export default function AppShell() {
   );
 
   const handleGeneratedPanelReady = useCallback(
-    ({ productId, query, runId, chart }: GeoGeneratedPanelReadyPayload) => {
+    ({
+      productId,
+      query,
+      runId,
+      chart,
+      execution,
+    }: GeoGeneratedPanelReadyPayload) => {
       setGeneratedPanels((current) => {
         const previous = current[productId];
 
@@ -122,6 +131,7 @@ export default function AppShell() {
             productId,
             query,
             chart,
+            execution,
             status: "ready",
             createdAt: previous?.createdAt ?? Date.now(),
             updatedAt: Date.now(),
@@ -133,7 +143,13 @@ export default function AppShell() {
   );
 
   const handleGeneratedPanelRendering = useCallback(
-    ({ productId, query, runId, chart }: GeoGeneratedPanelRenderingPayload) => {
+    ({
+      productId,
+      query,
+      runId,
+      chart,
+      execution,
+    }: GeoGeneratedPanelRenderingPayload) => {
       setGeneratedPanels((current) => {
         const previous = current[productId];
 
@@ -153,6 +169,7 @@ export default function AppShell() {
             productId,
             query,
             chart,
+            execution,
             status: "rendering",
             createdAt: previous?.createdAt ?? Date.now(),
             updatedAt: Date.now(),
@@ -180,6 +197,8 @@ export default function AppShell() {
           onSelectProduct={handleSelectProduct}
           activeTab={activeTab}
           onTabChange={handleTabChange}
+          catalogSource={catalogSource}
+          lastImportAt={lastImportAt}
         />
         <main
           className={`flex-1 overflow-y-auto transition-[margin] duration-300 ease-in-out ${
@@ -191,6 +210,7 @@ export default function AppShell() {
           <div className="max-w-6xl p-4 sm:p-6">
             {activeTab === "geo" && (
               <GEOTab
+                key={selectedProduct.id}
                 product={selectedProduct}
                 generatedPanel={generatedPanels[selectedProduct.id] ?? null}
                 onDismissGeneratedPanel={() =>

@@ -24,6 +24,8 @@ Merchants don't know how to make their products discoverable in these AI channel
 
 **Commercial Launch Pack** -- SEO vs GEO before/after comparison panel, generated JSON-LD schema, structured FAQ, commercial intent mapping, and a launch checklist with mock Shopify publish.
 
+**Workspace Imports & Run History** -- Import merchant CSV catalogs, persist workspace products and run history in browser storage, and surface whether GEO output is live AI, fallback, or unavailable.
+
 ### Demo Flow
 
 1. Select a product from the catalog (4 categories, 39 products)
@@ -112,7 +114,7 @@ AgentShelf/
 ├── frontend/           # Next.js application (all code lives here)
 │   ├── app/            # Next.js App Router
 │   ├── components/     # React components
-│   ├── lib/            # Types and mock data
+│   ├── lib/            # Types, mock data, workspace state, and AI helpers
 │   └── TESTING.md      # Testing and mock data guide
 ├── product_design.md   # Product requirements document
 ├── techstack.md        # Technical architecture document
@@ -123,11 +125,25 @@ AgentShelf/
 
 ```bash
 cd frontend
-bun install
-bun dev
+npm install
+npm run dev
 ```
 
 Open http://localhost:3000. See [frontend/TESTING.md](frontend/TESTING.md) for the full testing guide.
+
+### Environment Variables
+
+AgentShelf supports live OpenAI-backed audits and simulations with deterministic fallback behavior:
+
+```bash
+OPENAI_API_KEY=your_openai_api_key
+# Optional:
+OPENAI_MODEL=gpt-4.1-mini
+OPENAI_BASE_URL=https://api.openai.com/v1
+COPILOTKIT_OPENAI_MODEL=openai/gpt-4.1-mini
+```
+
+If `OPENAI_API_KEY` is missing, the GEO endpoints stay usable and clearly report that the UI is showing fallback data.
 
 ## Tech Stack
 
@@ -137,9 +153,9 @@ Open http://localhost:3000. See [frontend/TESTING.md](frontend/TESTING.md) for t
 | UI | React 19, Tailwind CSS v4 |
 | Icons | Lucide React |
 | Language | TypeScript |
-| Package Manager | bun |
-| AI Engine | Mock data (designed for OpenAI GPT integration) |
-| Workflow | Mock data (designed for LangChain agent orchestration) |
+| Package Manager | npm or bun |
+| AI Engine | OpenAI with deterministic fallback |
+| Workflow | CopilotKit + persistent workspace state |
 
 ## License
 

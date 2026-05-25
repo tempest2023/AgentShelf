@@ -3,9 +3,9 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useState,
   useCallback,
+  useSyncExternalStore,
   ReactNode,
 } from "react";
 import type { Category } from "@/lib/types";
@@ -75,6 +75,10 @@ const AuthContext = createContext<AuthContextValue>({
   logout: () => {},
 });
 
+function subscribeToHydration() {
+  return () => {};
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<MockUser | null>(() => {
     if (typeof window === "undefined") return null;
@@ -84,11 +88,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     return null;
   });
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
+  const isHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    () => true,
+    () => false
+  );
 
   const login = useCallback((userId: string) => {
     const found = MOCK_USERS.find((u) => u.id === userId);

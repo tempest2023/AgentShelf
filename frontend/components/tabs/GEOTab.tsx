@@ -14,7 +14,15 @@ import {
   ArrowRight,
   MessageSquare,
 } from "lucide-react";
-import type { Product, ProductAudit, QuerySimulation, GeoFix } from "@/lib/types";
+import type {
+  AIRunStatus,
+  AuditResponsePayload,
+  GeoFix,
+  Product,
+  ProductAudit,
+  QuerySimulation,
+  SimulationResponsePayload,
+} from "@/lib/types";
 import { getAuditForProduct, simulateQuery } from "@/lib/mock";
 import { useLanguage } from "@/lib/i18n/context";
 import type { TranslationKey } from "@/lib/i18n/translations";
@@ -24,6 +32,11 @@ import Badge from "@/components/Badge";
 import GeoGeneratedInsightPanel from "@/components/geo/GeoGeneratedInsightPanel";
 import type { Category } from "@/lib/types";
 import type { GeoGeneratedPanelState } from "@/lib/geo-generated-panel";
+import { useWorkspace } from "@/lib/workspace/context";
+import type {
+  WorkspaceAuditRunRecord,
+  WorkspaceQueryRunRecord,
+} from "@/lib/workspace/types";
 
 const suggestedQueries: Record<Category, string[]> = {
   electronics: [
@@ -62,18 +75,41 @@ export default function GEOTab({
   onDismissGeneratedPanel: () => void;
 }) {
   const [query, setQuery] = useState("");
-  const [simulation, setSimulation] = useState<QuerySimulation | null>(null);
+  const [simulationState, setSimulationState] = useState<{
+    query: string;
+    simulation: QuerySimulation;
+    status: AIRunStatus;
+  } | null>(null);
   const [expandedFix, setExpandedFix] = useState<number | null>(null);
   const baseAudit = useMemo(() => getAuditForProduct(product.id), [product.id]);
-  const [remoteAudit, setRemoteAudit] = useState<{
+  const {
+    getLatestAuditRun,
+    getLatestQueryRun,
+    recordAuditRun,
+    recordQueryRun,
+  } = useWorkspace();
+  const storedAudit = getLatestAuditRun(product.id);
+  const [auditState, setAuditState] = useState<{
     productId: string;
     audit: ProductAudit;
-  } | null>(null);
+    status: AIRunStatus;
+  } | null>(() =>
+    storedAudit
+      ? {
+          productId: storedAudit.productId,
+          audit: storedAudit.audit,
+          status: workspaceRunToStatus(storedAudit),
+        }
+      : null
+  );
   const [auditLoading, setAuditLoading] = useState(false);
   const [simulating, setSimulating] = useState(false);
   const { t } = useLanguage();
-  const audit =
-    remoteAudit?.productId === product.id ? remoteAudit.audit : baseAudit;
+  const audit = auditState?.productId === product.id ? auditState.audit : baseAudit;
+  const auditStatus =
+    auditState?.productId === product.id ? auditState.status : null;
+  const simulation = simulationState?.simulation ?? null;
+  const simulationStatus = simulationState?.status ?? null;
 
   const fetchAudit = useCallback(async (p: Product) => {
     setAuditLoading(true);
@@ -83,19 +119,47 @@ export default function GEOTab({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ product: p }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setRemoteAudit({
-          productId: p.id,
-          audit: data,
-        });
+
+      if (!res.ok) {
+        throw new Error(`Audit request failed with status ${res.status}`);
       }
-    } catch {
-      // fallback already set
+
+      const data = (await res.json()) as AuditResponsePayload;
+      setAuditState({
+        productId: p.id,
+        audit: data.audit,
+        status: data.status,
+      });
+      recordAuditRun({
+        productId: p.id,
+        audit: data.audit,
+        statusMode: data.status.mode,
+        statusMessage: data.status.message,
+        model: data.status.model,
+        error: data.status.error,
+      });
+    } catch (error) {
+      const fallbackStatus = buildClientFallbackStatus(
+        "Audit request failed locally, so AgentShelf is showing the deterministic fallback audit.",
+        error
+      );
+      setAuditState({
+        productId: p.id,
+        audit: getAuditForProduct(p.id),
+        status: fallbackStatus,
+      });
+      recordAuditRun({
+        productId: p.id,
+        audit: getAuditForProduct(p.id),
+        statusMode: fallbackStatus.mode,
+        statusMessage: fallbackStatus.message,
+        model: fallbackStatus.model,
+        error: fallbackStatus.error,
+      });
     } finally {
       setAuditLoading(false);
     }
-  }, []);
+  }, [recordAuditRun]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -110,22 +174,65 @@ export default function GEOTab({
     if (!queryText.trim()) return;
     setQuery(queryText);
     setSimulating(true);
+
+    const storedQueryRun = getLatestQueryRun(product.id, queryText);
+    if (storedQueryRun) {
+      setSimulationState({
+        query: storedQueryRun.query,
+        simulation: storedQueryRun.simulation,
+        status: workspaceRunToStatus(storedQueryRun),
+      });
+    }
+
     try {
       const res = await fetch("/api/geo/simulate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: queryText, product }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setSimulation(data);
-        setSimulating(false);
-        return;
+
+      if (!res.ok) {
+        throw new Error(`Simulation request failed with status ${res.status}`);
       }
-    } catch {
-      // fall through to mock
+
+      const data = (await res.json()) as SimulationResponsePayload;
+      setSimulationState({
+        query: queryText,
+        simulation: data.simulation,
+        status: data.status,
+      });
+      recordQueryRun({
+        productId: product.id,
+        query: queryText,
+        simulation: data.simulation,
+        statusMode: data.status.mode,
+        statusMessage: data.status.message,
+        model: data.status.model,
+        error: data.status.error,
+      });
+      setSimulating(false);
+      return;
+    } catch (error) {
+      const fallbackStatus = buildClientFallbackStatus(
+        "Simulation request failed locally, so AgentShelf is showing the deterministic query fallback.",
+        error
+      );
+      const fallbackSimulation = simulateQuery(queryText, product.category);
+      setSimulationState({
+        query: queryText,
+        simulation: fallbackSimulation,
+        status: fallbackStatus,
+      });
+      recordQueryRun({
+        productId: product.id,
+        query: queryText,
+        simulation: fallbackSimulation,
+        statusMode: fallbackStatus.mode,
+        statusMessage: fallbackStatus.message,
+        model: fallbackStatus.model,
+        error: fallbackStatus.error,
+      });
     }
-    setSimulation(simulateQuery(queryText, product.category));
     setSimulating(false);
   };
 
@@ -201,6 +308,14 @@ export default function GEOTab({
                       </span>
                     </span>
                   )}
+                </div>
+                <div className="mt-4">
+                  <RunStatusBanner
+                    title={t("geo.auditStatus")}
+                    status={auditStatus}
+                    loading={auditLoading}
+                    t={t}
+                  />
                 </div>
               </div>
             </Card>
@@ -290,6 +405,12 @@ export default function GEOTab({
 
             {simulation && (
               <div className="mt-5 space-y-4 animate-fade-in-up">
+                <RunStatusBanner
+                  title={t("geo.simulationStatus")}
+                  status={simulationStatus}
+                  loading={simulating}
+                  t={t}
+                />
                 <div className="px-4 py-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
                   <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 text-xs font-medium mb-2">
                     <MessageSquare className="w-3.5 h-3.5" />
@@ -373,6 +494,98 @@ export default function GEOTab({
           </Card>
         </div>
       </div>
+    </div>
+  );
+}
+
+function workspaceRunToStatus(
+  run: WorkspaceAuditRunRecord | WorkspaceQueryRunRecord
+): AIRunStatus {
+  return {
+    mode: run.statusMode,
+    configured: run.statusMode !== "unavailable",
+    model: run.model,
+    message: run.statusMessage,
+    error: run.error,
+    updatedAt: run.createdAt,
+  };
+}
+
+function buildClientFallbackStatus(
+  message: string,
+  error: unknown
+): AIRunStatus {
+  return {
+    mode: "fallback",
+    configured: true,
+    model: "client-fallback",
+    message,
+    error: error instanceof Error ? error.message : "Unknown client error",
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function RunStatusBanner({
+  title,
+  status,
+  loading,
+  t,
+}: {
+  title: string;
+  status: AIRunStatus | null;
+  loading: boolean;
+  t: (key: TranslationKey) => string;
+}) {
+  if (!status && !loading) {
+    return null;
+  }
+
+  const modeVariant =
+    status?.mode === "live"
+      ? "success"
+      : status?.mode === "fallback"
+        ? "warning"
+        : "danger";
+  const modeLabel =
+    status?.mode === "live"
+      ? t("geo.status.live")
+      : status?.mode === "fallback"
+        ? t("geo.status.fallback")
+        : t("geo.status.unavailable");
+
+  return (
+    <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/40">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">
+          {title}
+        </div>
+        {loading ? (
+          <Badge variant="info">{t("geo.status.refreshing")}</Badge>
+        ) : status ? (
+          <Badge variant={modeVariant}>{modeLabel}</Badge>
+        ) : null}
+      </div>
+
+      {status ? (
+        <div className="mt-2 space-y-1">
+          <p className="text-sm text-zinc-700 dark:text-zinc-300">
+            {status.message}
+          </p>
+          <p className="text-xs text-zinc-500">
+            {t("geo.status.model")} {status.model}
+          </p>
+          {status.mode === "unavailable" && (
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              {t("geo.status.configure")}
+            </p>
+          )}
+          {status.error ? (
+            <p className="text-xs text-red-600 dark:text-red-400">
+              {status.error}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
